@@ -1,0 +1,150 @@
+/* =========================================================
+   Front-page Summoner's Rift map (CSS-only, no copyrighted art)
+   - dark green diagonal "river" with three lanes drawn as bands
+   - role buttons positioned roughly where each role plays
+   ========================================================= */
+
+#rift-map {
+    position: relative;
+    width: 520px;
+    height: 520px;
+    max-width: 95vw;
+    aspect-ratio: 1 / 1;
+    background:
+        radial-gradient(circle at 12% 88%, #1a4a2a 0 18%, transparent 19%),  /* blue side base */
+        radial-gradient(circle at 88% 12%, #4a1a1a 0 18%, transparent 19%),  /* red side base  */
+        linear-gradient(135deg, transparent 44%, #0d4a6e 45% 55%, transparent 56%), /* river */
+        linear-gradient(45deg,  #1d3a1d 0%, #163016 100%);
+    border: 2px solid #2c5a2c;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+
+/* Dotted lane indicators */
+#rift-map::before, #rift-map::after {
+    content: "";
+    position: absolute; pointer-events: none;
+}
+#rift-map::before { /* top + bot lane bands */
+    inset: 0;
+    background:
+        linear-gradient(90deg, transparent 8%, rgba(255,255,255,0.05) 9% 91%, transparent 92%) top    no-repeat / 100% 14%,
+        linear-gradient(0deg,  transparent 8%, rgba(255,255,255,0.05) 9% 91%, transparent 92%) right  no-repeat / 14% 100%,
+        linear-gradient(90deg, transparent 8%, rgba(255,255,255,0.05) 9% 91%, transparent 92%) bottom no-repeat / 100% 14%,
+        linear-gradient(0deg,  transparent 8%, rgba(255,255,255,0.05) 9% 91%, transparent 92%) left   no-repeat / 14% 100%;
+}
+
+.role-btn {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    font-weight: 700;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, background 0.15s ease;
+    min-width: 80px;
+}
+.role-btn:hover {
+    background: #ffd34d;
+    transform: translate(-50%, -50%) scale(1.08);
+}
+.role-top  { top: 22%; left: 18%; }
+.role-jgl  { top: 45%; left: 32%; }
+.role-mid  { top: 50%; left: 50%; }
+.role-adc  { top: 78%; left: 82%; }
+.role-supp { top: 88%; left: 70%; }
+
+/* =========================================================
+   Draft / coach team columns
+   ========================================================= */
+
+.team-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.pick-card {
+    width: 110px;
+    background: #2a2a30;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+    color: #eee;
+}
+.pick-card.empty {
+    border-style: dashed;
+    border-color: #ffc107;
+    color: #ffc107;
+}
+.pick-card .role {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.pick-card .icon-wrap {
+    width: 80px; height: 80px;
+    margin: 4px auto;
+    background: #111;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+}
+.pick-card img { width: 100%; height: 100%; object-fit: cover; }
+.pick-card .name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+.vs-label {
+    align-self: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffc107;
+    text-shadow: 0 0 12px rgba(255,193,7,0.5);
+}
+
+/* Champion picker suggestions */
+#champ-suggestions {
+    max-height: 220px;
+    overflow-y: auto;
+}
+#champ-suggestions .list-group-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 8px;
+}
+#champ-suggestions .list-group-item:hover {
+    background: #ffe9a8;
+}
+#champ-suggestions img {
+    width: 28px; height: 28px; border-radius: 4px;
+}
+
+/* Coach alternative cards */
+.alt-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(255,255,255,0.6);
+    border-radius: 6px;
+}
+.alt-card img {
+    width: 56px; height: 56px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.alt-card .alt-body { flex: 1; }
+.alt-card .alt-name { font-weight: 700; }
