@@ -6,9 +6,8 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Mirrors the OpenAI Chat Completions request body.
- * Field names are snake_case to match the API exactly.
+/*
+ This DTO was made by ChatGPT 4.0 (same pattern as the chatgpt-jokes example)
  */
 @Getter
 @Setter
@@ -27,8 +26,6 @@ public class ChatCompletionRequest {
     public static class Message {
         private String role;
         private String content;
-
-        public Message() {}
 
         public Message(String role, String content) {
             this.role = role;

@@ -1,10 +1,10 @@
 package org.example.ailoldraftingcheck.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
 import org.example.ailoldraftingcheck.entity.ApiUsage;
 import org.example.ailoldraftingcheck.entity.ApiUsageRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,17 +18,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
-/**
- * Thin wrapper around the OpenAI Chat Completions endpoint.
- *
- * Mirrors the example chatgpt-jokes service: WebClient + .block() bridge,
- * config bound from application.properties, error mapping to a Spring
- * ResponseStatusException so controllers can stay simple.
- *
- * Adds: persistent token-usage logging via {@link ApiUsageRepository}, and a
- * raw-content method (not wrapped in MyResponse) because the draft/coach
- * endpoints want to parse the LLM's reply as JSON themselves.
- */
+/*
+This code utilizes WebClient along with several other classes from org.springframework.web.reactive.
+However, the code is NOT reactive due to the use of the block() method, which bridges the reactive code (WebClient)
+to our imperative code (the way we have used Spring Boot up until now).
+
+You will not truly benefit from WebClient unless you need to make several external requests in parallel.
+Additionally, the WebClient API is very clean, so if you are familiar with HTTP, it should be easy to
+understand what's going on in this code.
+*/
+
 @Service
 public class OpenAiService {
 
@@ -37,61 +36,66 @@ public class OpenAiService {
     @Value("${app.api-key}")
     private String API_KEY;
 
+    //See here for a decent explanation of the parameters send to the API via the requestBody
+    //https://platform.openai.com/docs/api-reference/completions/create
+
     @Value("${app.url}")
-    private String URL;
+    public String URL;
 
     @Value("${app.model}")
-    private String MODEL;
+    public String MODEL;
 
     @Value("${app.temperature}")
-    private double TEMPERATURE;
+    public double TEMPERATURE;
 
     @Value("${app.max_tokens}")
-    private int MAX_TOKENS;
+    public int MAX_TOKENS;
 
     @Value("${app.frequency_penalty}")
-    private double FREQUENCY_PENALTY;
+    public double FREQUENCY_PENALTY;
 
     @Value("${app.presence_penalty}")
-    private double PRESENCE_PENALTY;
+    public double PRESENCE_PENALTY;
 
     @Value("${app.top_p}")
-    private double TOP_P;
+    public double TOP_P;
 
-    private final WebClient client;
-    private final ApiUsageRepository usageRepository;
+    private WebClient client;
+    private final ApiUsageRepository apiUsageRepository;
 
-    public OpenAiService(ApiUsageRepository usageRepository) {
-        this.client = WebClient.builder()
-                .codecs(c -> c.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
-                .build();
-        this.usageRepository = usageRepository;
+    public OpenAiService(ApiUsageRepository apiUsageRepository) {
+        this.client = WebClient.create();
+        this.apiUsageRepository = apiUsageRepository;
     }
-
-    /** Test-only constructor: lets unit tests inject a mock WebClient. */
-    public OpenAiService(WebClient client, ApiUsageRepository usageRepository) {
+    //Use this constructor for testing, to inject a mock client
+    public OpenAiService(WebClient client, ApiUsageRepository apiUsageRepository) {
         this.client = client;
-        this.usageRepository = usageRepository;
+        this.apiUsageRepository = apiUsageRepository;
     }
 
     /**
-     * Send a system + user message pair to ChatGPT and return the raw assistant
-     * content string. Token usage is logged to the DB tagged with {@code endpointTag}.
+     * Sends a system + user message pair to ChatGPT and returns the raw
+     * assistant text. Token usage is logged to the H2 database, tagged with
+     * {@code endpointTag} so you can see per-endpoint spend.
      */
     public String chat(String systemMessage, String userMessage, String endpointTag) {
-        ChatCompletionRequest request = new ChatCompletionRequest();
-        request.setModel(MODEL);
-        request.setTemperature(TEMPERATURE);
-        request.setMax_tokens(MAX_TOKENS);
-        request.setTop_p(TOP_P);
-        request.setFrequency_penalty(FREQUENCY_PENALTY);
-        request.setPresence_penalty(PRESENCE_PENALTY);
-        request.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
-        request.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
+
+        ChatCompletionRequest requestDto = new ChatCompletionRequest();
+        requestDto.setModel(MODEL);
+        requestDto.setTemperature(TEMPERATURE);
+        requestDto.setMax_tokens(MAX_TOKENS);
+        requestDto.setTop_p(TOP_P);
+        requestDto.setFrequency_penalty(FREQUENCY_PENALTY);
+        requestDto.setPresence_penalty(PRESENCE_PENALTY);
+        requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
+        requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
 
         ObjectMapper mapper = new ObjectMapper();
+        String json = "";
+        String err = null;
         try {
-            String json = mapper.writeValueAsString(request);
+            json = mapper.writeValueAsString(requestDto);
+            System.out.println(json);
             ChatCompletionResponse response = client.post()
                     .uri(new URI(URL))
                     .header("Authorization", "Bearer " + API_KEY)
@@ -101,21 +105,28 @@ public class OpenAiService {
                     .retrieve()
                     .bodyToMono(ChatCompletionResponse.class)
                     .block();
-
-            String content = response.getChoices().get(0).getMessage().getContent();
+            String responseMsg = response.getChoices().get(0).getMessage().getContent();
             ChatCompletionResponse.Usage u = response.getUsage();
-            usageRepository.save(new ApiUsage(
-                    endpointTag, u.getPrompt_tokens(), u.getCompletion_tokens(), u.getTotal_tokens()));
-            logger.info("OpenAI [{}] tokens used: {}", endpointTag, u.getTotal_tokens());
-            return content;
+            System.out.print("Tokens used: " + u.getTotal_tokens());
+            System.out.print(". Cost ($0.0015 / 1K tokens) : $" + String.format("%6f", (u.getTotal_tokens() * 0.0015 / 1000)));
+            System.out.println(". For 1$, this is the amount of similar requests you can make: " + Math.round(1 / (u.getTotal_tokens() * 0.0015 / 1000)));
+
+            apiUsageRepository.save(new ApiUsage(endpointTag, u.getPrompt_tokens(), u.getCompletion_tokens(), u.getTotal_tokens()));
+
+            return responseMsg;
         } catch (WebClientResponseException e) {
-            logger.error("OpenAI error {} - body: {}", e.getRawStatusCode(), e.getResponseBodyAsString());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to reach OpenAI. Check the backend logs and your API_KEY.");
+            //This is how you can get the status code and message reported back by the remote API
+            logger.error("Error response status code: " + e.getStatusCode().value());
+            logger.error("Error response body: " + e.getResponseBodyAsString());
+            logger.error("WebClientResponseException", e);
+            err = "Internal Server Error, due to a failed request to external service. You could try again" +
+                    "( While you develop, make sure to consult the detailed error message on your backend)";
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
         } catch (Exception e) {
-            logger.error("OpenAI unexpected error", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Internal error while talking to OpenAI: " + e.getMessage());
+            logger.error("Exception", e);
+            err = "Internal Server Error - You could try again" +
+                    "( While you develop, make sure to consult the detailed error message on your backend)";
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
         }
     }
 }

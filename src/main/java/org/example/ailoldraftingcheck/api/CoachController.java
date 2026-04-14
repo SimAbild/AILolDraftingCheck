@@ -2,133 +2,129 @@ package org.example.ailoldraftingcheck.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
 import org.example.ailoldraftingcheck.dtos.DraftPick;
 import org.example.ailoldraftingcheck.service.DataDragonService;
-import org.example.ailoldraftingcheck.service.OpGgScraperService;
 import org.example.ailoldraftingcheck.service.OpenAiService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Trin 4 in the flow: the user has picked a champion, now the AI explains
- * what's good, what's bad, and suggests up to 3 alternatives.
+ * Reviews the user's champion pick and returns positives, negatives,
+ * and up to 3 alternative champions with short reasons.
  *
- * Pipeline:
- *   1. Look up best-effort counter data from op.gg (may be empty).
- *   2. Build a JSON-only prompt that includes the full draft + counter hints.
- *   3. Ask ChatGPT.
- *   4. Parse, attach icons via Data Dragon, return.
+ * Same IP-rate-limit pattern as DraftController and the example
+ * JokeLimitedController.
  */
 @RestController
 @RequestMapping("/api/v1/coach")
 @CrossOrigin(origins = "*")
 public class CoachController {
 
-    private static final Logger logger = LoggerFactory.getLogger(CoachController.class);
+    final static String SYSTEM_MESSAGE =
+            "You are a League of Legends drafting coach." +
+            " You will receive the user's role + chosen champion, their 4 ally picks, and the 5 enemy picks." +
+            " Use champion knowledge about synergies with the ally team and counters to the enemy team." +
+            " Reply with STRICT JSON only, no markdown, in this exact shape:" +
+            " {\"positives\":[\"short sentence 1\",\"short sentence 2\",\"short sentence 3\"]," +
+            "  \"negatives\":[\"short sentence 1\",\"short sentence 2\",\"short sentence 3\"]," +
+            "  \"alternatives\":[" +
+            "    {\"champion\":\"Name\",\"reason\":\"one short sentence\"}," +
+            "    {\"champion\":\"Name\",\"reason\":\"...\"}," +
+            "    {\"champion\":\"Name\",\"reason\":\"...\"}]}" +
+            " Keep each bullet short. Alternative champions must be real League champions that fit the user's role.";
 
-    private static final String SYSTEM_MESSAGE = """
-            You are a League of Legends drafting coach.
-            You will receive: the user's chosen champion + role, their 4 ally picks, and the 5 enemy picks.
-            You may also receive 'counter_hints' - champions that op.gg lists as counters to the user's pick.
-            You need to use champion knowledge in regards to synergies with ally team and counters for enemy team.
-            Use them as a tie-breaker but rely on champion knowledge for the actual reasoning.
-            
+    @Value("${app.bucket_capacity}")
+    private int BUCKET_CAPACITY;
 
-            Reply with STRICT JSON ONLY, no markdown, in this exact shape:
-            {
-              "positives": ["short bullet 1", "short bullet 2", "short bullet 3"],
-              "negatives": ["short bullet 1", "short bullet 2", "short bullet 3"],
-              "alternatives": [
-                {"champion":"Name", "reason":"one short sentence why this is a stronger pick"},
-                {"champion":"Name", "reason":"..."},
-                {"champion":"Name", "reason":"..."}
-              ]
-            }
-            Each bullet must be one short sentence, written for a learning player.
-            Alternative champions must be real League champions and must fit the user's role.
-            """;
+    @Value("${app.refill_amount}")
+    private int REFILL_AMOUNT;
 
-    private final OpenAiService ai;
+    @Value("${app.refill_time}")
+    private int REFILL_TIME;
+
+    private final OpenAiService service;
     private final DataDragonService dataDragon;
-    private final OpGgScraperService opgg;
-    private final RateLimit rateLimit;
+    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
-    public CoachController(OpenAiService ai, DataDragonService dataDragon,
-                           OpGgScraperService opgg, RateLimit rateLimit) {
-        this.ai = ai;
+    public CoachController(OpenAiService service, DataDragonService dataDragon) {
+        this.service = service;
         this.dataDragon = dataDragon;
-        this.opgg = opgg;
-        this.rateLimit = rateLimit;
     }
 
-    /** POST /api/v1/coach   body: CoachRequest */
-    @PostMapping
-    public CoachResponse coach(@RequestBody CoachRequest req, HttpServletRequest request) {
-        rateLimit.consumeOrThrow(request);
+    private Bucket createNewBucket() {
+        Bandwidth limit = Bandwidth.classic(BUCKET_CAPACITY, Refill.greedy(REFILL_AMOUNT, Duration.ofMinutes(REFILL_TIME)));
+        return Bucket.builder().addLimit(limit).build();
+    }
 
-        if (req.getUserChampion() == null || req.getUserRole() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "userChampion and userRole are required");
+    private Bucket getBucket(String key) {
+        return buckets.computeIfAbsent(key, k -> createNewBucket());
+    }
+
+    @PostMapping
+    public CoachResponse getCoach(@RequestBody CoachRequest req, HttpServletRequest request) {
+
+        String ip = request.getRemoteAddr();
+        Bucket bucket = getBucket(ip);
+        if (!bucket.tryConsume(1)) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests, try again later");
         }
 
-        // Best-effort live data
-        List<String> counterHints = opgg.fetchCounters(req.getUserChampion(), req.getUserRole());
-        String dataSource = counterHints.isEmpty() ? "llm-only" : "op.gg-scrape";
+        if (req.getUserChampion() == null || req.getUserRole() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userChampion and userRole are required");
+        }
 
-        String userPrompt = buildUserPrompt(req, counterHints);
-        String content = ai.chat(SYSTEM_MESSAGE, userPrompt, "coach");
+        String userPrompt = buildUserPrompt(req);
+        String content = service.chat(SYSTEM_MESSAGE, userPrompt, "coach");
 
         try {
             JsonNode root = parseJson(content);
-            List<String> positives = toStringList(root.get("positives"));
-            List<String> negatives = toStringList(root.get("negatives"));
+            List<String> positives = toStrings(root.get("positives"));
+            List<String> negatives = toStrings(root.get("negatives"));
             List<CoachResponse.Alternative> alts = parseAlternatives(root.get("alternatives"));
-            return new CoachResponse(positives, negatives, alts, dataSource);
+            return new CoachResponse(positives, negatives, alts);
         } catch (Exception e) {
-            logger.error("Could not parse coach JSON: {}", content, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "AI returned invalid JSON. Please try again.");
         }
     }
 
-    private String buildUserPrompt(CoachRequest req, List<String> counterHints) {
-        String allyStr = req.getAllyTeam() == null ? "(none)" :
-                req.getAllyTeam().stream()
-                        .map(p -> p.getRole() + ":" + p.getChampionName())
-                        .collect(Collectors.joining(", "));
-        String enemyStr = req.getEnemyTeam() == null ? "(none)" :
-                req.getEnemyTeam().stream()
-                        .map(p -> p.getRole() + ":" + p.getChampionName())
-                        .collect(Collectors.joining(", "));
-        return """
-                user_role: %s
-                user_champion: %s
-                ally_team (4): %s
-                enemy_team (5): %s
-                counter_hints: %s
-                """.formatted(req.getUserRole(), req.getUserChampion(), allyStr, enemyStr,
-                              counterHints.isEmpty() ? "(none)" : String.join(", ", counterHints));
+    private String buildUserPrompt(CoachRequest req) {
+        String ally = teamToLine(req.getAllyTeam());
+        String enemy = teamToLine(req.getEnemyTeam());
+        return "user_role: " + req.getUserRole() +
+               "\nuser_champion: " + req.getUserChampion() +
+               "\nally_team (4): " + ally +
+               "\nenemy_team (5): " + enemy;
+    }
+
+    private String teamToLine(List<DraftPick> team) {
+        if (team == null || team.isEmpty()) return "(none)";
+        return team.stream()
+                .map(p -> p.getRole() + ":" + p.getChampionName())
+                .collect(Collectors.joining(", "));
     }
 
     private JsonNode parseJson(String content) throws Exception {
-        String cleaned = content.trim();
-        if (cleaned.startsWith("```")) {
-            cleaned = cleaned.replaceAll("(?s)```(json)?", "").trim();
-        }
-        return new ObjectMapper().readTree(cleaned);
+        String clean = content.trim();
+        if (clean.startsWith("```")) clean = clean.replaceAll("(?s)```(json)?", "").trim();
+        return new ObjectMapper().readTree(clean);
     }
 
-    private List<String> toStringList(JsonNode arr) {
+    private List<String> toStrings(JsonNode arr) {
         List<String> out = new ArrayList<>();
         if (arr == null || !arr.isArray()) return out;
         for (JsonNode n : arr) out.add(n.asText());
