@@ -7,7 +7,8 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * The body the frontend POSTs to /coach after the user has chosen a champion.
+ * Body the frontend POSTs to /coach after the user has chosen a champion.
+ * Carries everything the AI needs to review the pick.
  */
 @Getter
 @Setter

@@ -7,7 +7,10 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * Structured coaching feedback.
+ * What the /coach endpoint returns.
+ *   positives    - short sentences about what works
+ *   negatives    - short sentences about what doesn't
+ *   alternatives - up to 3 stronger champion suggestions with reasons
  */
 @Getter
 @Setter
@@ -23,6 +26,7 @@ public class CoachResponse {
         this.alternatives = alternatives;
     }
 
+    /** One alternative champion suggested by the coach. */
     @Getter
     @Setter
     @NoArgsConstructor

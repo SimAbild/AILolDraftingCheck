@@ -2,9 +2,8 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
-import org.example.ailoldraftingcheck.entity.ApiUsage;
-import org.example.ailoldraftingcheck.entity.ApiUsageRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,68 +17,64 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
-/*
-This code utilizes WebClient along with several other classes from org.springframework.web.reactive.
-However, the code is NOT reactive due to the use of the block() method, which bridges the reactive code (WebClient)
-to our imperative code (the way we have used Spring Boot up until now).
-
-You will not truly benefit from WebClient unless you need to make several external requests in parallel.
-Additionally, the WebClient API is very clean, so if you are familiar with HTTP, it should be easy to
-understand what's going on in this code.
-*/
-
+/**
+ * Thin wrapper around the OpenAI Chat Completions endpoint.
+ *
+ * Based on the chatgpt-jokes example. Uses WebClient to call the external API
+ * and .block() to bridge reactive code to our normal imperative controllers.
+ */
 @Service
 public class OpenAiService {
 
     public static final Logger logger = LoggerFactory.getLogger(OpenAiService.class);
 
+    // Config values are injected from application.properties.
     @Value("${app.api-key}")
     private String API_KEY;
 
-    //See here for a decent explanation of the parameters send to the API via the requestBody
-    //https://platform.openai.com/docs/api-reference/completions/create
-
     @Value("${app.url}")
-    public String URL;
+    private String URL;
 
     @Value("${app.model}")
-    public String MODEL;
+    private String MODEL;
 
     @Value("${app.temperature}")
-    public double TEMPERATURE;
+    private double TEMPERATURE;
 
     @Value("${app.max_tokens}")
-    public int MAX_TOKENS;
+    private int MAX_TOKENS;
 
     @Value("${app.frequency_penalty}")
-    public double FREQUENCY_PENALTY;
+    private double FREQUENCY_PENALTY;
 
     @Value("${app.presence_penalty}")
-    public double PRESENCE_PENALTY;
+    private double PRESENCE_PENALTY;
 
     @Value("${app.top_p}")
-    public double TOP_P;
+    private double TOP_P;
 
-    private WebClient client;
-    private final ApiUsageRepository apiUsageRepository;
+    // One shared WebClient instance, built with WebClient.builder().
+    private final WebClient client;
 
-    public OpenAiService(ApiUsageRepository apiUsageRepository) {
-        this.client = WebClient.create();
-        this.apiUsageRepository = apiUsageRepository;
-    }
-    //Use this constructor for testing, to inject a mock client
-    public OpenAiService(WebClient client, ApiUsageRepository apiUsageRepository) {
-        this.client = client;
-        this.apiUsageRepository = apiUsageRepository;
+    // Jackson 3: use JsonMapper.builder().build() instead of new ObjectMapper().
+    private final ObjectMapper mapper = JsonMapper.builder().build();
+
+    public OpenAiService() {
+        this.client = WebClient.builder().build();
     }
 
     /**
-     * Sends a system + user message pair to ChatGPT and returns the raw
-     * assistant text. Token usage is logged to the H2 database, tagged with
-     * {@code endpointTag} so you can see per-endpoint spend.
+     * Sends a system + user message to ChatGPT and returns the raw text reply.
+     *
+     * Steps:
+     *   1. Build a ChatCompletionRequest DTO with the model + tuning knobs.
+     *   2. Convert it to JSON with Jackson.
+     *   3. POST it to the OpenAI URL, with the API key in the Authorization header.
+     *   4. Parse the response into ChatCompletionResponse and return the text.
      */
-    public String chat(String systemMessage, String userMessage, String endpointTag) {
+    public String chat(String systemMessage, String userMessage) {
 
+        // 1. Build the request body.
         ChatCompletionRequest requestDto = new ChatCompletionRequest();
         requestDto.setModel(MODEL);
         requestDto.setTemperature(TEMPERATURE);
@@ -90,12 +85,11 @@ public class OpenAiService {
         requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
         requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
 
-        ObjectMapper mapper = new ObjectMapper();
-        String json = "";
-        String err = null;
         try {
-            json = mapper.writeValueAsString(requestDto);
-            System.out.println(json);
+            // 2. Convert DTO -> JSON string.
+            String json = mapper.writeValueAsString(requestDto);
+
+            // 3. POST to OpenAI. .block() waits for the response before returning.
             ChatCompletionResponse response = client.post()
                     .uri(new URI(URL))
                     .header("Authorization", "Bearer " + API_KEY)
@@ -105,28 +99,22 @@ public class OpenAiService {
                     .retrieve()
                     .bodyToMono(ChatCompletionResponse.class)
                     .block();
-            String responseMsg = response.getChoices().get(0).getMessage().getContent();
-            ChatCompletionResponse.Usage u = response.getUsage();
-            System.out.print("Tokens used: " + u.getTotal_tokens());
-            System.out.print(". Cost ($0.0015 / 1K tokens) : $" + String.format("%6f", (u.getTotal_tokens() * 0.0015 / 1000)));
-            System.out.println(". For 1$, this is the amount of similar requests you can make: " + Math.round(1 / (u.getTotal_tokens() * 0.0015 / 1000)));
 
-            apiUsageRepository.save(new ApiUsage(endpointTag, u.getPrompt_tokens(), u.getCompletion_tokens(), u.getTotal_tokens()));
+            // 4. Pull the actual text reply out of choices[0].message.content.
+            int tokensUsed = response.getUsage().getTotal_tokens();
+            logger.info("OpenAI tokens used: " + tokensUsed);
+            return response.getChoices().get(0).getMessage().getContent();
 
-            return responseMsg;
         } catch (WebClientResponseException e) {
-            //This is how you can get the status code and message reported back by the remote API
-            logger.error("Error response status code: " + e.getStatusCode().value());
-            logger.error("Error response body: " + e.getResponseBodyAsString());
-            logger.error("WebClientResponseException", e);
-            err = "Internal Server Error, due to a failed request to external service. You could try again" +
-                    "( While you develop, make sure to consult the detailed error message on your backend)";
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
+            // The API responded with an error status (bad API key, quota, etc.).
+            logger.error("OpenAI error " + e.getStatusCode().value() + ": " + e.getResponseBodyAsString());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to reach OpenAI. Check the backend log and your API_KEY.");
         } catch (Exception e) {
-            logger.error("Exception", e);
-            err = "Internal Server Error - You could try again" +
-                    "( While you develop, make sure to consult the detailed error message on your backend)";
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
+            // Anything else (network, JSON parse, etc.)
+            logger.error("OpenAI unexpected error", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal error while talking to OpenAI.");
         }
     }
 }

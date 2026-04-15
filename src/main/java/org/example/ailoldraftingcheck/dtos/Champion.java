@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * One champion as exposed by Riot Data Dragon.
+ * One League of Legends champion as exposed by Riot Data Dragon.
  *   id      - internal id, e.g. "MonkeyKing"
  *   name    - display name, e.g. "Wukong"
  *   iconUrl - full square icon URL

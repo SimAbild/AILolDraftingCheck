@@ -11,9 +11,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class DraftPick {
-    private String role;
-    private String championName;
-    private String iconUrl;
+    private String role;          // TOP / JGL / MID / ADC / SUPP
+    private String championName;  // e.g. "Aatrox"
+    private String iconUrl;       // square champion icon
 
     public DraftPick(String role, String championName, String iconUrl) {
         this.role = role;
