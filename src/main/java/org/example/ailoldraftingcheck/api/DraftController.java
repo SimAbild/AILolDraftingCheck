@@ -13,21 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-/**
- * POST /api/v1/draft
- * Asks ChatGPT to generate a realistic draft around the user's chosen role:
- * 5 enemy champions and 4 ally champions (the user's role slot is left empty
- * so they can pick it themselves on the next screen).
- */
 @RestController
 @RequestMapping("/api/v1/draft")
 @CrossOrigin(origins = "*")
 public class DraftController {
 
-    // The five valid roles.
-    private static final List<String> ROLES = List.of("TOP", "JGL", "MID", "ADC", "SUPP");
+    private static final List<String> VALID_ROLES = List.of("TOP", "JGL", "MID", "ADC", "SUPP");
 
-    // Tells the AI exactly how to behave and how to format its answer.
     private static final String SYSTEM_MESSAGE =
             "You are a League of Legends draft generator." +
             " Given the user's role, output a realistic draft for the OTHER nine slots:" +
@@ -37,78 +29,71 @@ public class DraftController {
             " \"ally\":[{\"role\":\"JGL\",\"champion\":\"...\"}, ...4 entries, EXCLUDING user role...]}" +
             " Use champion names that exist in League of Legends.";
 
-    private final OpenAiService openAi;
-    private final DataDragonService dataDragon;
+    private final OpenAiService openAiService;
+    private final DataDragonService dataDragonService;
 
-    public DraftController(OpenAiService openAi, DataDragonService dataDragon) {
-        this.openAi = openAi;
-        this.dataDragon = dataDragon;
+    public DraftController(OpenAiService openAiService, DataDragonService dataDragonService) {
+        this.openAiService = openAiService;
+        this.dataDragonService = dataDragonService;
     }
 
-    /**
-     * Steps:
-     *   1. Validate the incoming role.
-     *   2. Ask OpenAI to produce the draft as JSON.
-     *   3. Parse that JSON and look up each champion in Data Dragon to get icons.
-     *   4. Return a clean DraftResponse.
-     */
     @PostMapping
-    public DraftResponse getDraft(@RequestBody Map<String, String> body) {
+    public DraftResponse generateDraft(@RequestBody Map<String, String> requestBody) {
+        String userRole = extractAndValidateRole(requestBody);
+        String aiReply = openAiService.chat(SYSTEM_MESSAGE, "User role: " + userRole);
 
-        // 1. Read and validate "role" from the request body.
-        String userRole = Optional.ofNullable(body.get("role"))
-                .map(String::toUpperCase)
-                .orElse("");
-        if (!ROLES.contains(userRole)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "role must be one of " + ROLES);
-        }
-
-        // 2. Call ChatGPT.
-        String aiReply = openAi.chat(SYSTEM_MESSAGE, "User role: " + userRole);
-
-        // 3. Parse the AI's JSON reply into DraftPick lists.
         try {
-            JsonNode root = parseJson(aiReply);
-            List<DraftPick> enemy = parseTeam(root.get("enemy"), null);
-            List<DraftPick> ally = parseTeam(root.get("ally"), userRole);
-            // 4. Return the structured response to the frontend.
-            return new DraftResponse(userRole, enemy, ally);
+            JsonNode responseJson = parseAiReply(aiReply);
+            List<DraftPick> enemyTeam = buildTeamPicks(responseJson.get("enemy"), null);
+            List<DraftPick> allyTeam = buildTeamPicks(responseJson.get("ally"), userRole);
+            return new DraftResponse(userRole, enemyTeam, allyTeam);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "AI returned invalid JSON. Please try again.");
         }
     }
 
-    /** ChatGPT sometimes wraps JSON in ``` code fences - strip them before parsing. */
-    private JsonNode parseJson(String content) throws Exception {
-        String clean = content.trim();
-        if (clean.startsWith("```")) {
-            clean = clean.replaceAll("(?s)```(json)?", "").trim();
+    private String extractAndValidateRole(Map<String, String> requestBody) {
+        String userRole = Optional.ofNullable(requestBody.get("role"))
+                .map(String::toUpperCase)
+                .orElse("");
+        boolean isValidRole = VALID_ROLES.contains(userRole);
+        if (!isValidRole) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "role must be one of " + VALID_ROLES);
         }
-        return JsonMapper.builder().build().readTree(clean);
+        return userRole;
     }
 
-    /**
-     * Turn the AI's array of {role, champion} into DraftPick objects.
-     * Unknown champions or entries for the excluded role are skipped.
-     */
-    private List<DraftPick> parseTeam(JsonNode arr, String excludedRole) {
+    private JsonNode parseAiReply(String content) throws Exception {
+        String cleanContent = content.trim();
+        if (cleanContent.startsWith("```")) {
+            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
+        }
+        return JsonMapper.builder().build().readTree(cleanContent);
+    }
+
+    private List<DraftPick> buildTeamPicks(JsonNode jsonArray, String excludedRole) {
         List<DraftPick> picks = new ArrayList<>();
-        if (arr == null || !arr.isArray()) return picks;
+        if (jsonArray == null || !jsonArray.isArray()) return picks;
 
-        for (JsonNode n : arr) {
-            String role = n.path("role").asText("").toUpperCase(Locale.ROOT);
-            String champ = n.path("champion").asText("");
+        for (JsonNode pickNode : jsonArray) {
+            String role = pickNode.path("role").asText("").toUpperCase(Locale.ROOT);
+            String championName = pickNode.path("champion").asText("");
 
-            if (!ROLES.contains(role)) continue;
-            if (excludedRole != null && role.equals(excludedRole)) continue;
+            if (shouldSkipPick(role, excludedRole)) continue;
 
-            Optional<Champion> c = dataDragon.byName(champ);
-            if (c.isEmpty()) continue;
+            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(championName);
+            if (maybeChampion.isEmpty()) continue;
 
-            picks.add(new DraftPick(role, c.get().getName(), c.get().getIconUrl()));
+            picks.add(new DraftPick(role, maybeChampion.get().getName(), maybeChampion.get().getIconUrl()));
         }
         return picks;
+    }
+
+    private boolean shouldSkipPick(String role, String excludedRole) {
+        boolean isUnknownRole = !VALID_ROLES.contains(role);
+        boolean isExcludedRole = excludedRole != null && role.equals(excludedRole);
+        return isUnknownRole || isExcludedRole;
     }
 }

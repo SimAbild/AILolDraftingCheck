@@ -6,12 +6,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-/**
- * What the /draft endpoint returns.
- *   userRole  - echoed back so the frontend knows which ally slot is empty
- *   enemyTeam - 5 picks
- *   allyTeam  - 4 picks (excludes the user's role; they pick that themselves)
- */
 @Getter
 @Setter
 @NoArgsConstructor

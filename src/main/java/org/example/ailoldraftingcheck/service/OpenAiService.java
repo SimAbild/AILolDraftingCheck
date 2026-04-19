@@ -17,104 +17,89 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
-/**
- * Thin wrapper around the OpenAI Chat Completions endpoint.
- *
- * Based on the chatgpt-jokes example. Uses WebClient to call the external API
- * and .block() to bridge reactive code to our normal imperative controllers.
- */
 @Service
 public class OpenAiService {
 
-    public static final Logger logger = LoggerFactory.getLogger(OpenAiService.class);
+    private static final Logger logger = LoggerFactory.getLogger(OpenAiService.class);
+    private static final int FIRST_CHOICE_INDEX = 0;
 
-    // Config values are injected from application.properties.
     @Value("${app.api-key}")
-    private String API_KEY;
+    private String apiKey;
 
     @Value("${app.url}")
-    private String URL;
+    private String apiUrl;
 
     @Value("${app.model}")
-    private String MODEL;
+    private String model;
 
     @Value("${app.temperature}")
-    private double TEMPERATURE;
+    private double temperature;
 
     @Value("${app.max_tokens}")
-    private int MAX_TOKENS;
+    private int maxTokens;
 
     @Value("${app.frequency_penalty}")
-    private double FREQUENCY_PENALTY;
+    private double frequencyPenalty;
 
     @Value("${app.presence_penalty}")
-    private double PRESENCE_PENALTY;
+    private double presencePenalty;
 
     @Value("${app.top_p}")
-    private double TOP_P;
+    private double topP;
 
-    // One shared WebClient instance, built with WebClient.builder().
-    private final WebClient client;
-
-    // Jackson 3: use JsonMapper.builder().build() instead of new ObjectMapper().
-    private final ObjectMapper mapper = JsonMapper.builder().build();
+    private final WebClient webClient;
+    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     public OpenAiService() {
-        this.client = WebClient.builder().build();
+        this.webClient = WebClient.builder().build();
     }
 
-    /**
-     * Sends a system + user message to ChatGPT and returns the raw text reply.
-     *
-     * Steps:
-     *   1. Build a ChatCompletionRequest DTO with the model + tuning knobs.
-     *   2. Convert it to JSON with Jackson.
-     *   3. POST it to the OpenAI URL, with the API key in the Authorization header.
-     *   4. Parse the response into ChatCompletionResponse and return the text.
-     */
     public String chat(String systemMessage, String userMessage) {
-
-        // 1. Build the request body.
-        ChatCompletionRequest requestDto = new ChatCompletionRequest();
-        requestDto.setModel(MODEL);
-        requestDto.setTemperature(TEMPERATURE);
-        requestDto.setMax_tokens(MAX_TOKENS);
-        requestDto.setTop_p(TOP_P);
-        requestDto.setFrequency_penalty(FREQUENCY_PENALTY);
-        requestDto.setPresence_penalty(PRESENCE_PENALTY);
-        requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
-        requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
+        ChatCompletionRequest chatRequest = buildChatRequest(systemMessage, userMessage);
 
         try {
-            // 2. Convert DTO -> JSON string.
-            String json = mapper.writeValueAsString(requestDto);
-
-            // 3. POST to OpenAI. .block() waits for the response before returning.
-            ChatCompletionResponse response = client.post()
-                    .uri(new URI(URL))
-                    .header("Authorization", "Bearer " + API_KEY)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromValue(json))
-                    .retrieve()
-                    .bodyToMono(ChatCompletionResponse.class)
-                    .block();
-
-            // 4. Pull the actual text reply out of choices[0].message.content.
-            int tokensUsed = response.getUsage().getTotal_tokens();
-            logger.info("OpenAI tokens used: " + tokensUsed);
-            return response.getChoices().get(0).getMessage().getContent();
-
+            String requestBodyJson = jsonMapper.writeValueAsString(chatRequest);
+            ChatCompletionResponse chatResponse = sendChatRequest(requestBodyJson);
+            return extractReplyText(chatResponse);
         } catch (WebClientResponseException e) {
-            // The API responded with an error status (bad API key, quota, etc.).
-            logger.error("OpenAI error " + e.getStatusCode().value() + ": " + e.getResponseBodyAsString());
+            logger.error("OpenAI error {}: {}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Failed to reach OpenAI. Check the backend log and your API_KEY.");
         } catch (Exception e) {
-            // Anything else (network, JSON parse, etc.)
             logger.error("OpenAI unexpected error", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Internal error while talking to OpenAI.");
         }
+    }
+
+    private ChatCompletionRequest buildChatRequest(String systemMessage, String userMessage) {
+        ChatCompletionRequest chatRequest = new ChatCompletionRequest();
+        chatRequest.setModel(model);
+        chatRequest.setTemperature(temperature);
+        chatRequest.setMax_tokens(maxTokens);
+        chatRequest.setTop_p(topP);
+        chatRequest.setFrequency_penalty(frequencyPenalty);
+        chatRequest.setPresence_penalty(presencePenalty);
+        chatRequest.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
+        chatRequest.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
+        return chatRequest;
+    }
+
+    private ChatCompletionResponse sendChatRequest(String requestBodyJson) throws Exception {
+        return webClient.post()
+                .uri(new URI(apiUrl))
+                .header("Authorization", "Bearer " + apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(requestBodyJson))
+                .retrieve()
+                .bodyToMono(ChatCompletionResponse.class)
+                .block();
+    }
+
+    private String extractReplyText(ChatCompletionResponse chatResponse) {
+        int tokensUsed = chatResponse.getUsage().getTotal_tokens();
+        logger.info("OpenAI tokens used: {}", tokensUsed);
+        return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
     }
 }
