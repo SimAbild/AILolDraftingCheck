@@ -43,6 +43,10 @@ public class DraftController {
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, "User role: " + userRole);
 
         try {
+            // JsonNode er Jacksons "træ-model" til at navigere JSON dynamisk,
+            // uden at skulle deserialisere hele svaret til en fast Java-klasse.
+            // Vi bruger det her fordi AI-svarets JSON-struktur er kompleks
+            // og indeholder nestede arrays med objekter.
             JsonNode responseJson = parseAiReply(aiReply);
             List<DraftPick> enemyTeam = buildTeamPicks(responseJson.get("enemy"), null);
             List<DraftPick> allyTeam = buildTeamPicks(responseJson.get("ally"), userRole);
@@ -75,14 +79,23 @@ public class DraftController {
 
     private List<DraftPick> buildTeamPicks(JsonNode jsonArray, String excludedRole) {
         List<DraftPick> picks = new ArrayList<>();
+
+        // .isArray() tjekker om JsonNode-en indeholder et JSON-array ([ ... ]).
+        // Det er en sikkerhedstjek — AI'en kan i sjældne tilfælde svare forkert.
         if (jsonArray == null || !jsonArray.isArray()) return picks;
 
         for (JsonNode pickNode : jsonArray) {
+            // .path("role") læser feltet "role" fra JSON-objektet.
+            // Forskellen på .get() og .path() er at .path() returnerer en
+            // tom node (i stedet for null) hvis feltet ikke findes — det undgår NullPointerException.
+            // .asText("") konverterer nodeværdien til String, med "" som fallback.
             String role = pickNode.path("role").asText("").toUpperCase(Locale.ROOT);
             String championName = pickNode.path("champion").asText("");
 
             if (shouldSkipPick(role, excludedRole)) continue;
 
+            // Optional bruges her fordi en champion måske ikke kendes i Data Dragon.
+            // .isEmpty() tjekker om Optional er tom — altså om champion ikke blev fundet.
             Optional<Champion> maybeChampion = dataDragonService.findChampionByName(championName);
             if (maybeChampion.isEmpty()) continue;
 

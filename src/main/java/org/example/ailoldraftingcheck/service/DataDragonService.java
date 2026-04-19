@@ -21,12 +21,25 @@ public class DataDragonService {
     private static final String VERSIONS_URL = DATA_DRAGON_BASE_URL + "/api/versions.json";
     private static final int NEWEST_PATCH_INDEX = 0;
 
+    // WebClient er Springs HTTP-klient til at kalde eksterne API'er.
+    // Den er bygget til at arbejde asynkront, men .block() bruges her
+    // for at vente på svaret og holde koden sekventiel — som et normalt metodekald.
     private final WebClient webClient = WebClient.builder().build();
+
+    // ObjectMapper (fra Jackson-biblioteket) er motoren bag konvertering
+    // mellem JSON-tekst og Java. Den kan både:
+    //   JSON-tekst → Java-objekt   (deserialisering)
+    //   Java-objekt → JSON-tekst   (serialisering)
+    // JsonMapper er Jackson 3's moderne variant af den klassiske ObjectMapper.
     private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     private final List<Champion> champions = new ArrayList<>();
     private final Map<String, Champion> championsByLowercaseName = new HashMap<>();
 
+    // @PostConstruct fortæller Spring at denne metode skal køres automatisk
+    // én gang, lige efter at beanen er oprettet og alle dens afhængigheder
+    // er injiceret. Det er den korrekte måde at lave opstartslogik på i Spring
+    // — aldrig i konstruktøren, da afhængigheder endnu ikke er klar der.
     @PostConstruct
     public void load() {
         try {
@@ -85,6 +98,12 @@ public class DataDragonService {
         return List.copyOf(champions);
     }
 
+    // Optional<T> er Javas container til en værdi der måske ikke eksisterer.
+    // I stedet for at returnere null (som kan give NullPointerException overalt),
+    // returnerer vi Optional.empty() hvis champion ikke kendes,
+    // eller Optional.of(champion) hvis den gør.
+    // Kalderen tvinges derved til aktivt at forholde sig til begge tilfælde
+    // — f.eks. med .map(), .orElse() eller .isEmpty().
     public Optional<Champion> findChampionByName(String name) {
         if (name == null) return Optional.empty();
         return Optional.ofNullable(championsByLowercaseName.get(name.toLowerCase(Locale.ROOT)));

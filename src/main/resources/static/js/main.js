@@ -1,5 +1,3 @@
-// Entry point. Loads the champion list and wires up the three views.
-
 document.addEventListener('DOMContentLoaded', async function() {
     initHome();
     initDraft();

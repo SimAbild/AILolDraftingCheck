@@ -48,6 +48,9 @@ public class OpenAiService {
     private double topP;
 
     private final WebClient webClient;
+
+    // ObjectMapper bruges her til at serialisere vores ChatCompletionRequest-objekt
+    // til en JSON-streng, som vi sender som request body til OpenAI's API.
     private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     public OpenAiService() {
@@ -86,6 +89,16 @@ public class OpenAiService {
     }
 
     private ChatCompletionResponse sendChatRequest(String requestBodyJson) throws Exception {
+        // WebClient bygger HTTP-kaldet som en kæde af metoder (fluent API).
+        // .post()              → HTTP POST-metode
+        // .uri()               → URL'en der kaldes
+        // .header()            → tilføjer Authorization-headeren med API-nøglen
+        // .contentType()       → fortæller serveren at vi sender JSON
+        // .accept()            → fortæller serveren at vi forventer JSON tilbage
+        // .body()              → request body — vores JSON-streng
+        // .retrieve()          → sender kaldet og henter svaret
+        // .bodyToMono()        → konverterer svaret til det ønskede Java-objekt
+        // .block()             → venter synkront på svaret (gør async til imperativ)
         return webClient.post()
                 .uri(new URI(apiUrl))
                 .header("Authorization", "Bearer " + apiKey)

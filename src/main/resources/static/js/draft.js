@@ -1,5 +1,4 @@
-// Draft view: show the AI-generated teams, let the user pick their champion
-// via autocomplete, then jump to the coach view.
+const MAX_SUGGESTIONS = 8;
 
 function initDraft() {
     document.getElementById('back-home').addEventListener('click', function() {
@@ -10,14 +9,13 @@ function initDraft() {
     document.getElementById('champ-suggestions').addEventListener('click', onSuggestionClick);
 }
 
-// Draw / redraw the entire draft view.
-function renderDraftView(loading) {
+function renderDraftView(isLoading) {
     document.getElementById('user-role-label').textContent = state.userRole || '';
     document.getElementById('champ-input').value = '';
     document.getElementById('champ-suggestions').innerHTML = '';
     document.getElementById('ask-coach').disabled = true;
 
-    document.getElementById('draft-spinner').style.display = loading ? 'block' : 'none';
+    document.getElementById('draft-spinner').style.display = isLoading ? 'block' : 'none';
 
     document.getElementById('ally-team').innerHTML =
         renderTeam(state.allyTeam, state.userRole, state.userChampion);
@@ -26,38 +24,42 @@ function renderDraftView(loading) {
 }
 
 function onSearchInput(ev) {
-    const query = ev.target.value.trim().toLowerCase();
-    const ul = document.getElementById('champ-suggestions');
-    if (!query) { ul.innerHTML = ''; return; }
+    const searchQuery = ev.target.value.trim().toLowerCase();
+    const suggestionsList = document.getElementById('champ-suggestions');
 
-    const matches = state.champions
-        .filter(c => c.name.toLowerCase().indexOf(query) === 0)
-        .slice(0, 8);
+    if (!searchQuery) {
+        suggestionsList.innerHTML = '';
+        return;
+    }
+
+    const matchingChampions = state.champions
+        .filter(champion => champion.name.toLowerCase().startsWith(searchQuery))
+        .slice(0, MAX_SUGGESTIONS);
 
     let html = '';
-    for (let i = 0; i < matches.length; i++) {
-        const c = matches[i];
+    for (const champion of matchingChampions) {
         html += `
-            <li class="list-group-item" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-icon="${c.iconUrl}">
-                <img src="${c.iconUrl}" alt=""/> ${escapeHtml(c.name)}
+            <li class="list-group-item" data-id="${champion.id}" data-name="${escapeHtml(champion.name)}" data-icon="${champion.iconUrl}">
+                <img src="${champion.iconUrl}" alt=""/> ${escapeHtml(champion.name)}
             </li>`;
     }
-    ul.innerHTML = html;
+    suggestionsList.innerHTML = html;
 }
 
 function onSuggestionClick(ev) {
-    const li = ev.target.closest('li');
-    if (!li) return;
+    const selectedSuggestion = ev.target.closest('li');
+    if (!selectedSuggestion) return;
+
     state.userChampion = {
-        id: li.dataset.id,
-        name: li.dataset.name,
-        iconUrl: li.dataset.icon
+        id: selectedSuggestion.dataset.id,
+        name: selectedSuggestion.dataset.name,
+        iconUrl: selectedSuggestion.dataset.icon
     };
-    document.getElementById('champ-input').value = li.dataset.name;
+
+    document.getElementById('champ-input').value = selectedSuggestion.dataset.name;
     document.getElementById('champ-suggestions').innerHTML = '';
     document.getElementById('ask-coach').disabled = false;
 
-    // Redraw so the user's chosen champion appears in their ally slot.
     document.getElementById('ally-team').innerHTML =
         renderTeam(state.allyTeam, state.userRole, state.userChampion);
 }
@@ -65,17 +67,17 @@ function onSuggestionClick(ev) {
 async function askCoach() {
     if (!state.userChampion) return;
     showView('coach');
-    renderCoachView(true, null); // loading = true
+    renderCoachView(true, null);
 
     try {
-        const payload = {
+        const coachRequest = {
             userRole: state.userRole,
             userChampion: state.userChampion.name,
             allyTeam: state.allyTeam,
             enemyTeam: state.enemyTeam
         };
-        const result = await apiPostCoach(payload);
-        renderCoachView(false, result);
+        const coachAnalysis = await apiPostCoach(coachRequest);
+        renderCoachView(false, coachAnalysis);
     } catch (e) {
         showError('Coach failed: ' + e.message);
         renderCoachView(false, null);

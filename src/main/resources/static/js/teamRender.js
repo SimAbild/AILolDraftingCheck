@@ -1,40 +1,28 @@
-// Draws a team (5 slots) as HTML. Used by both the draft and coach views.
-
 function renderTeam(team, userRole, userChampion) {
     let html = '';
-    for (let i = 0; i < ROLES.length; i++) {
-        const role = ROLES[i];
-
-        // The user's own slot - either empty placeholder or their chosen champion.
+    for (const role of VALID_ROLES) {
         if (userRole === role) {
-            if (userChampion) {
-                html += pickCard({
-                    role: role,
-                    championName: userChampion.name,
-                    iconUrl: userChampion.iconUrl
-                });
-            } else {
-                html += emptyCard(role);
-            }
+            html += userChampion
+                ? pickCard({ role, championName: userChampion.name, iconUrl: userChampion.iconUrl })
+                : emptyCard(role);
             continue;
         }
 
-        // Everyone else.
-        const pick = team.find(p => p.role === role);
+        const pick = team.find(teamPick => teamPick.role === role);
         html += pick ? pickCard(pick) : emptyCard(role);
     }
     return html;
 }
 
-function pickCard(p) {
-    const img = p.iconUrl
-        ? `<img src="${p.iconUrl}" alt="${escapeHtml(p.championName)}"/>`
+function pickCard(pick) {
+    const iconImage = pick.iconUrl
+        ? `<img src="${pick.iconUrl}" alt="${escapeHtml(pick.championName)}"/>`
         : '';
     return `
         <div class="pick-card">
-            <div class="role">${p.role}</div>
-            <div class="icon-wrap">${img}</div>
-            <div class="name">${escapeHtml(p.championName)}</div>
+            <div class="role">${pick.role}</div>
+            <div class="icon-wrap">${iconImage}</div>
+            <div class="name">${escapeHtml(pick.championName)}</div>
         </div>`;
 }
 
