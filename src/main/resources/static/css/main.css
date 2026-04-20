@@ -1,99 +1,161 @@
-/* ==========================================================
-   Front page: clickable role buttons on the Summoner's Rift map.
-   Save your map image to src/main/resources/static/img/rift.png.
-   ========================================================== */
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+}
+
+.page-wrapper {
+    height: 100vh;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-header {
+    text-align: center;
+    flex-shrink: 0;
+    margin-bottom: 0.75rem;
+}
+
+.page-header h1 {
+    font-size: 1.4rem;
+    margin-bottom: 0.2rem;
+}
+
+.page-header__subtitle {
+    color: #666;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.error-banner {
+    flex-shrink: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Page sections ───────────────────────────────────────────────────────── */
+
+.page-sections {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.page-section {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+}
+
+.section--hidden {
+    display: none;
+}
+
+.section--revealed {
+    animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.section-header__step {
+    background: #d48806;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-header__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.section-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.section-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+/* ── Rift map role picker ────────────────────────────────────────────────── */
 
 #rift-map {
     position: relative;
     width: 520px;
     height: 520px;
-    max-width: 95vw;
+    max-width: 95%;
     aspect-ratio: 1 / 1;
     background-image: url("../img/rift.jpg");
     background-size: cover;
     background-position: center;
     border: 2px solid #2c5a2c;
     border-radius: 12px;
-    margin: 0 auto;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    margin: 1rem auto 0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .role-btn {
     position: absolute;
     transform: translate(-50%, -50%);
-    background: rgba(255,255,255,0.95);
+    background: rgba(255, 255, 255, 0.95);
     color: #111;
     font-weight: 700;
     border: 2px solid #fff;
     border-radius: 8px;
     padding: 8px 16px;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     min-width: 90px;
+    transition: background 0.15s;
 }
+
 .role-btn:hover {
     background: #ffd34d;
 }
+
 .role-top  { top: 22%; left: 18%; }
 .role-jgl  { top: 45%; left: 32%; }
 .role-mid  { top: 50%; left: 50%; }
 .role-adc  { top: 78%; left: 82%; }
 .role-supp { top: 88%; left: 70%; }
 
-/* ==========================================================
-   Team columns (shared between draft view and coach view).
-   ========================================================== */
+/* ── Draft board ─────────────────────────────────────────────────────────── */
 
 .draft-board {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     gap: 1.5rem;
+    margin: 1.25rem 0;
 }
 
 .team-col {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-}
-
-.pick-card {
-    width: 110px;
-    background: #f5f5f7;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    padding: 6px;
-    text-align: center;
-}
-.pick-card.empty {
-    border-style: dashed;
-    border-color: #e0a800;
-    color: #a07000;
-    background: #fff9e6;
-}
-.pick-card .role {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-.pick-card .icon-wrap {
-    width: 80px; height: 80px;
-    margin: 4px auto;
-    background: #222;
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-    color: #aaa;
-    font-size: 1.5rem;
-}
-.pick-card img { width: 100%; height: 100%; object-fit: cover; }
-.pick-card .name {
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-top: 2px;
-    word-break: break-word;
 }
 
 .vs-label {
@@ -103,14 +165,76 @@
     color: #d48806;
 }
 
-/* ==========================================================
-   Champion autocomplete suggestions.
-   ========================================================== */
+/* ── Champion pick cards ─────────────────────────────────────────────────── */
+
+.pick-card {
+    width: 110px;
+    background: #f5f5f7;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+}
+
+.pick-card--empty {
+    border-style: dashed;
+    border-color: #e0a800;
+    color: #a07000;
+    background: #fff9e6;
+}
+
+.pick-card__role {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.pick-card__icon {
+    width: 80px;
+    height: 80px;
+    margin: 4px auto;
+    background: #222;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #aaa;
+    font-size: 1.5rem;
+}
+
+.pick-card__icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pick-card__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+/* ── Champion search autocomplete ───────────────────────────────────────── */
+
+.champion-picker {
+    margin-top: 1.25rem;
+}
+
+.champion-picker label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.4rem;
+}
 
 #champ-suggestions {
     max-height: 220px;
     overflow-y: auto;
 }
+
 #champ-suggestions .list-group-item {
     cursor: pointer;
     display: flex;
@@ -118,16 +242,18 @@
     gap: 0.5rem;
     padding: 4px 8px;
 }
+
 #champ-suggestions .list-group-item:hover {
     background: #fff2c2;
 }
+
 #champ-suggestions img {
-    width: 28px; height: 28px; border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
 }
 
-/* ==========================================================
-   Coach alternative champion cards.
-   ========================================================== */
+/* ── Coach alternative champion cards ───────────────────────────────────── */
 
 .alt-card {
     display: flex;
@@ -138,15 +264,37 @@
     border-radius: 6px;
     margin-bottom: 0.5rem;
 }
+
 .alt-card img {
-    width: 56px; height: 56px;
+    width: 56px;
+    height: 56px;
     border-radius: 6px;
     flex-shrink: 0;
 }
-.alt-card .alt-body { flex: 1; }
-.alt-card .alt-name { font-weight: 700; }
-.alt-card .alt-reason { font-size: 0.9rem; color: #444; }
 
-label {
-    font-weight: bold;
+.alt-card__body {
+    flex: 1;
+}
+
+.alt-card__name {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.alt-card__reason {
+    font-size: 0.875rem;
+    color: #444;
+    margin-bottom: 0.4rem;
+}
+
+.alt-card__strengths {
+    margin: 0;
+    padding-left: 1.1rem;
+    list-style: disc;
+}
+
+.alt-card__strengths li {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.5;
 }

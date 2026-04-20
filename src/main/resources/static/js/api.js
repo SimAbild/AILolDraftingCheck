@@ -1,5 +1,3 @@
-const SERVER_BASE_URL = 'http://localhost:8080/api/v1/';
-
 async function handleHttpErrors(response) {
     if (!response.ok) {
         const errorBody = await response.json();

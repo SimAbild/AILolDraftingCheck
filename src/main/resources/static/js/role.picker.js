@@ -1,4 +1,4 @@
-function initHome() {
+function initRolePicker() {
     const roleButtons = document.querySelectorAll('.role-btn');
     for (const roleButton of roleButtons) {
         roleButton.addEventListener('click', function() {
@@ -8,8 +8,8 @@ function initHome() {
 }
 
 async function onRolePicked(role) {
-    state.userRole = role;
-    state.userChampion = null;
+    currentDraft.userRole = role;
+    currentDraft.userChampion = null;
     hideError();
 
     hideSection('section-home');
@@ -18,8 +18,8 @@ async function onRolePicked(role) {
 
     try {
         const draft = await apiPostDraft(role);
-        state.enemyTeam = draft.enemyTeam;
-        state.allyTeam = draft.allyTeam;
+        currentDraft.enemyTeam = draft.enemyTeam;
+        currentDraft.allyTeam = draft.allyTeam;
         renderDraftSection(false);
     } catch (e) {
         showError('Draft generation failed: ' + e.message);

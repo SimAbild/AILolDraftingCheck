@@ -1,5 +1,5 @@
-const state = {
-    champions: [],
+const currentDraft = {
+    allChampions: [],
     userRole: null,
     enemyTeam: [],
     allyTeam: [],

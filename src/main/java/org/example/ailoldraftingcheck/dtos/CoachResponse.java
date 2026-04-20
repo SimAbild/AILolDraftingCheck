@@ -27,11 +27,13 @@ public class CoachResponse {
         private String championName;
         private String iconUrl;
         private String reason;
+        private List<String> strengths;
 
-        public Alternative(String championName, String iconUrl, String reason) {
+        public Alternative(String championName, String iconUrl, String reason, List<String> strengths) {
             this.championName = championName;
             this.iconUrl = iconUrl;
             this.reason = reason;
+            this.strengths = strengths;
         }
     }
 }

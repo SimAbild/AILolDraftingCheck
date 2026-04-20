@@ -25,8 +25,11 @@ public class DraftController {
             " Given the user's role, output a realistic draft for the OTHER nine slots:" +
             " 5 enemy champions and 4 ally champions (exclude the user's role from the ally list)." +
             " Reply with STRICT JSON only, no markdown, in this exact shape:" +
-            " {\"enemy\":[{\"role\":\"TOP\",\"champion\":\"Aatrox\"}, ...5 entries...]," +
-            " \"ally\":[{\"role\":\"JGL\",\"champion\":\"...\"}, ...4 entries, EXCLUDING user role...]}" +
+            " {\"enemy\":[{\"role\":\"TOP\",\"champion\":\"Aatrox\"},{\"role\":\"JGL\",\"champion\":\"Vi\"}," +
+            "{\"role\":\"MID\",\"champion\":\"Lux\"},{\"role\":\"ADC\",\"champion\":\"Jinx\"},{\"role\":\"SUPP\",\"champion\":\"Thresh\"}]," +
+            " \"ally\":[{\"role\":\"TOP\",\"champion\":\"...\"},{\"role\":\"JGL\",\"champion\":\"...\"}," +
+            "{\"role\":\"MID\",\"champion\":\"...\"},{\"role\":\"ADC\",\"champion\":\"...\"}]}" +
+            " Roles MUST use EXACTLY these abbreviations: TOP, JGL, MID, ADC, SUPP." +
             " Use champion names that exist in League of Legends.";
 
     private final OpenAiService openAiService;
@@ -89,7 +92,7 @@ public class DraftController {
             // Forskellen på .get() og .path() er at .path() returnerer en
             // tom node (i stedet for null) hvis feltet ikke findes — det undgår NullPointerException.
             // .asText("") konverterer nodeværdien til String, med "" som fallback.
-            String role = pickNode.path("role").asText("").toUpperCase(Locale.ROOT);
+            String role = normalizeRole(pickNode.path("role").asText("").toUpperCase(Locale.ROOT));
             String championName = pickNode.path("champion").asText("");
 
             if (shouldSkipPick(role, excludedRole)) continue;
@@ -102,6 +105,16 @@ public class DraftController {
             picks.add(new DraftPick(role, maybeChampion.get().getName(), maybeChampion.get().getIconUrl()));
         }
         return picks;
+    }
+
+    private String normalizeRole(String role) {
+        return switch (role) {
+            case "SUPPORT", "SUP" -> "SUPP";
+            case "JUNGLE", "JUNGLER" -> "JGL";
+            case "MIDDLE" -> "MID";
+            case "BOTTOM", "BOT" -> "ADC";
+            default -> role;
+        };
     }
 
     private boolean shouldSkipPick(String role, String excludedRole) {

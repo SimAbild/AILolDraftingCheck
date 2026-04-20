@@ -11,33 +11,46 @@
             integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="css/main.css">
-    <!-- Script load order matters: state + api first, then views, then main last. -->
-    <script defer src="js/state.js"></script>
+
+    <!-- Load order matters: constants → draft data → helpers → api → rendering → sections → app -->
+    <script defer src="js/config.js"></script>
+    <script defer src="js/current.draft.js"></script>
+    <script defer src="js/utils.js"></script>
     <script defer src="js/api.js"></script>
-    <script defer src="js/teamRender.js"></script>
-    <script defer src="js/home.js"></script>
+    <script defer src="js/draft.pick.js"></script>
+    <script defer src="js/team.lineup.js"></script>
+    <script defer src="js/role.picker.js"></script>
+    <script defer src="js/draft.search.js"></script>
     <script defer src="js/draft.js"></script>
+    <script defer src="js/coach.feedback.js"></script>
     <script defer src="js/coach.js"></script>
-    <script defer src="js/main.js"></script>
+    <script defer src="js/app.js"></script>
 </head>
 
 <body>
 
-<div class="container">
-    <h2>AI LoL Drafting Coach</h2>
+<div class="page-wrapper">
 
-    <p>This is a school project to help teach drafting in League of Legends. It uses AI so some mistakes can happen.</p>
+    <header class="page-header">
+        <h1>AI LoL Drafting Coach</h1>
+        <p class="page-header__subtitle">
+            A school project to help teach drafting in League of Legends. AI is used, so some mistakes can happen.
+        </p>
+    </header>
 
-    <div id="error-banner" class="alert alert-danger" style="display:none;"></div>
+    <div id="error-banner" class="alert alert-danger error-banner" style="display:none;"></div>
 
-    <!-- ====================== VIEW 1: Front page ====================== -->
-    <div id="view-home">
+    <div class="page-sections">
 
-        <div class="card m-3">
+    <!-- ── Step 1: Pick your role ───────────────────────────────────────── -->
+    <section id="section-home" class="page-section">
+        <div class="section-header">
+            <span class="section-header__step">Step 1</span>
+            <h2 class="section-header__title">Pick your role</h2>
+        </div>
+        <div class="card section-card">
             <div class="card-body">
-                <h5 class="card-title">Pick your main role</h5>
                 <p class="card-text">Click the role you play on the map below.</p>
-
                 <div id="rift-map">
                     <button type="button" class="role-btn role-top"  data-role="TOP">TOP</button>
                     <button type="button" class="role-btn role-jgl"  data-role="JGL">JGL</button>
@@ -47,19 +60,24 @@
                 </div>
             </div>
         </div>
+    </section>
 
-    </div>
-
-    <!-- ====================== VIEW 2: Draft + champion picker ====================== -->
-    <div id="view-draft" style="display:none;">
-
-        <div class="card m-3">
+    <!-- ── Step 2: See the draft and pick your champion ─────────────────── -->
+    <section id="section-draft" class="page-section section--hidden">
+        <div class="section-header">
+            <span class="section-header__step">Step 2</span>
+            <h2 class="section-header__title">Your draft</h2>
+        </div>
+        <div class="card section-card">
             <div class="card-body">
-                <h5 class="card-title">Your draft</h5>
                 <p class="card-text">
-                    The AI drafted your enemy team and your ally team (without your role).
+                    The AI has drafted your enemy team and your ally team (without your role).
                     Pick the champion you would play, then ask the coach.
                 </p>
+
+                <div id="draft-spinner" class="spinner-border text-success" role="status" style="display:none;">
+                    <span class="visually-hidden">Loading draft...</span>
+                </div>
 
                 <div class="draft-board">
                     <div id="ally-team" class="team-col"></div>
@@ -67,37 +85,39 @@
                     <div id="enemy-team" class="team-col"></div>
                 </div>
 
-                <div class="picker mt-4">
+                <div class="champion-picker">
                     <label for="champ-input">
-                        Your champion (<span id="user-role-label">role</span>)
+                        Your champion (<span id="user-role-label"></span>)
                     </label>
                     <input type="text" id="champ-input" class="form-control" autocomplete="off"
                            placeholder='Type a champion name, e.g. "Aatrox"'/>
                     <ul id="champ-suggestions" class="list-group mt-2"></ul>
-
-                    <div class="row mt-3">
-                        <div class="column text-end">
-                            <button type="button" id="back-home" class="btn btn-outline-secondary btn-sm">New role</button>
-                            <button type="button" id="ask-coach" class="btn btn-primary" disabled>Ask the coach</button>
-                        </div>
-                    </div>
                 </div>
 
-                <div id="draft-spinner" class="spinner-border text-success" role="status"
-                     style="margin-left:1em;border-radius: 50%;display:none;">
-                    <span class="visually-hidden">Loading...</span>
+                <div class="section-actions">
+                    <button type="button" id="new-role" class="btn btn-outline-secondary btn-sm">
+                        ← Pick a different role
+                    </button>
+                    <button type="button" id="ask-coach" class="btn btn-primary" disabled>
+                        Ask the coach →
+                    </button>
                 </div>
             </div>
         </div>
+    </section>
 
-    </div>
-
-    <!-- ====================== VIEW 3: Coach feedback ====================== -->
-    <div id="view-coach" style="display:none;">
-
-        <div class="card m-3">
+    <!-- ── Step 3: Coach feedback ────────────────────────────────────────── -->
+    <section id="section-coach" class="page-section section--hidden">
+        <div class="section-header">
+            <span class="section-header__step">Step 3</span>
+            <h2 class="section-header__title">Coach feedback</h2>
+        </div>
+        <div class="card section-card">
             <div class="card-body">
-                <h5 class="card-title">Coach feedback</h5>
+
+                <div id="coach-spinner" class="spinner-border text-success" role="status" style="display:none;">
+                    <span class="visually-hidden">Asking the coach...</span>
+                </div>
 
                 <div class="draft-board">
                     <div id="ally-team-final" class="team-col"></div>
@@ -111,7 +131,7 @@
                         <ul id="coach-positives" class="list-group"></ul>
                     </div>
                     <div class="col-md-6">
-                        <h6>What doesn't</h6>
+                        <h6>What doesn't work</h6>
                         <ul id="coach-negatives" class="list-group"></ul>
                     </div>
                 </div>
@@ -119,22 +139,18 @@
                 <h6 class="mt-4">Stronger alternative champions</h6>
                 <div id="coach-alternatives"></div>
 
-                <div class="row mt-3">
-                    <div class="column text-end">
-                        <button type="button" id="restart" class="btn btn-outline-secondary btn-sm">Start a new draft</button>
-                    </div>
+                <div class="section-actions">
+                    <button type="button" id="start-new-draft" class="btn btn-outline-secondary btn-sm">
+                        ← Start a new draft
+                    </button>
                 </div>
 
-                <div id="coach-spinner" class="spinner-border text-success" role="status"
-                     style="margin-left:1em;border-radius: 50%;display:none;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
             </div>
         </div>
+    </section>
 
-    </div>
-
-</div>
+    </div><!-- .page-sections -->
+</div><!-- .page-wrapper -->
 
 </body>
 </html>
