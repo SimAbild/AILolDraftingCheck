@@ -1,7 +1,0 @@
-const state = {
-    champions: [],
-    userRole: null,
-    enemyTeam: [],
-    allyTeam: [],
-    userChampion: null
-};

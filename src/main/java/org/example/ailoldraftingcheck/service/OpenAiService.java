@@ -2,6 +2,7 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
@@ -114,5 +115,15 @@ public class OpenAiService {
         int tokensUsed = chatResponse.getUsage().getTotal_tokens();
         logger.info("OpenAI tokens used: {}", tokensUsed);
         return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
+    }
+
+    // Renser og parser AI-svaret som JSON.
+    // AI'en pakker sommetider svaret ind i ```json ... ``` — det fjernes inden parsing.
+    public JsonNode parseJsonReply(String content) throws Exception {
+        String cleanContent = content.trim();
+        if (cleanContent.startsWith("```")) {
+            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
+        }
+        return jsonMapper.readTree(cleanContent);
     }
 }
