@@ -51,10 +51,11 @@ public class OpenAiService {
 
     // ObjectMapper bruges her til at serialisere vores ChatCompletionRequest-objekt
     // til en JSON-streng, som vi sender som request body til OpenAI's API.
-    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
+    private final ObjectMapper jsonMapper;
 
     public OpenAiService() {
         this.webClient = WebClient.builder().build();
+        this.jsonMapper = JsonMapper.builder().build();
     }
 
     public String chat(String systemMessage, String userMessage) {
