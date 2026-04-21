@@ -2,7 +2,6 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
@@ -80,10 +79,10 @@ public class OpenAiService {
         ChatCompletionRequest chatRequest = new ChatCompletionRequest();
         chatRequest.setModel(model);
         chatRequest.setTemperature(temperature);
-        chatRequest.setMax_tokens(maxTokens);
-        chatRequest.setTop_p(topP);
-        chatRequest.setFrequency_penalty(frequencyPenalty);
-        chatRequest.setPresence_penalty(presencePenalty);
+        chatRequest.setMaxTokens(maxTokens);
+        chatRequest.setTopP(topP);
+        chatRequest.setFrequencyPenalty(frequencyPenalty);
+        chatRequest.setPresencePenalty(presencePenalty);
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
         return chatRequest;
@@ -112,18 +111,22 @@ public class OpenAiService {
     }
 
     private String extractReplyText(ChatCompletionResponse chatResponse) {
-        int tokensUsed = chatResponse.getUsage().getTotal_tokens();
+        int tokensUsed = chatResponse.getUsage().getTotalTokens();
         logger.info("OpenAI tokens used: {}", tokensUsed);
         return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
     }
 
-    // Renser og parser AI-svaret som JSON.
+    // Renser AI-svaret og deserialiserer det direkte til den ønskede Java-type.
     // AI'en pakker sommetider svaret ind i ```json ... ``` — det fjernes inden parsing.
-    public JsonNode parseJsonReply(String content) throws Exception {
+    //
+    // <T> er en generisk type-parameter: metoden kan returnere hvilken som helst type,
+    // alt efter hvad kalderen angiver som responseType.
+    // Eksempel: parseJsonReply(aiReply, AiMatchup.class) returnerer en AiMatchup.
+    public <T> T parseJsonReply(String content, Class<T> responseType) throws Exception {
         String cleanContent = content.trim();
         if (cleanContent.startsWith("```")) {
             cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
         }
-        return jsonMapper.readTree(cleanContent);
+        return jsonMapper.readValue(cleanContent, responseType);
     }
 }

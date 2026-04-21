@@ -2,12 +2,13 @@ package org.example.ailoldraftingcheck.dtos;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
+// Forespørgslen fra frontend til coach-analysen.
+// Deserialiseres fra HTTP request body — @NoArgsConstructor og @Getter
+// er påkrævet for at Jackson kan læse JSON-felterne.
 @Getter
-@Setter
 @NoArgsConstructor
 public class CoachRequest {
     private String userRole;

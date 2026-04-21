@@ -1,6 +1,7 @@
 package org.example.ailoldraftingcheck.service;
 
-import tools.jackson.databind.JsonNode;
+import org.example.ailoldraftingcheck.dtos.AiChampionRecommendation;
+import org.example.ailoldraftingcheck.dtos.AiCoachAnalysis;
 import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
@@ -69,11 +70,11 @@ public class CoachService {
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, userPrompt);
 
         try {
-            JsonNode responseJson = openAiService.parseJsonReply(aiReply);
-            List<String> positives = extractStringList(responseJson.get("positives"));
-            List<String> negatives = extractStringList(responseJson.get("negatives"));
-            List<CoachResponse.Alternative> alternatives = parseChampionAlternatives(responseJson.get("alternatives"));
-            return new CoachResponse(positives, negatives, alternatives);
+            // Jackson deserialiserer JSON-svaret direkte til AiCoachAnalysis,
+            // inklusiv de indlejrede lister af strings og AiChampionRecommendation-objekter.
+            AiCoachAnalysis aiCoach = openAiService.parseJsonReply(aiReply, AiCoachAnalysis.class);
+            List<CoachResponse.Alternative> alternatives = resolveChampionAlternatives(aiCoach.getAlternatives());
+            return new CoachResponse(aiCoach.getPositives(), aiCoach.getNegatives(), alternatives);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "AI returned invalid JSON. Please try again.");
@@ -98,28 +99,17 @@ public class CoachService {
                 .collect(Collectors.joining(", "));
     }
 
-    private List<String> extractStringList(JsonNode jsonArray) {
-        List<String> result = new ArrayList<>();
-        if (jsonArray == null || !jsonArray.isArray()) return result;
-        for (JsonNode jsonNode : jsonArray) result.add(jsonNode.asText());
-        return result;
-    }
+    private List<CoachResponse.Alternative> resolveChampionAlternatives(List<AiChampionRecommendation> aiRecommendations) {
+        if (aiRecommendations == null) return List.of();
 
-    private List<CoachResponse.Alternative> parseChampionAlternatives(JsonNode jsonArray) {
         List<CoachResponse.Alternative> alternatives = new ArrayList<>();
-        if (jsonArray == null || !jsonArray.isArray()) return alternatives;
-
-        for (JsonNode alternativeNode : jsonArray) {
-            String championName = alternativeNode.path("champion").asText("");
-            String reason = alternativeNode.path("reason").asText("");
-            List<String> strengths = extractStringList(alternativeNode.get("strengths"));
-
+        for (AiChampionRecommendation aiAlternative : aiRecommendations) {
             // Optional bruges her fordi en champion måske ikke kendes i Data Dragon.
-            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(championName);
+            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(aiAlternative.getChampionName());
             String iconUrl = maybeChampion.map(Champion::getIconUrl).orElse("");
-            String resolvedChampionName = maybeChampion.map(Champion::getName).orElse(championName);
+            String resolvedName = maybeChampion.map(Champion::getName).orElse(aiAlternative.getChampionName());
 
-            alternatives.add(new CoachResponse.Alternative(resolvedChampionName, iconUrl, reason, strengths));
+            alternatives.add(new CoachResponse.Alternative(resolvedName, iconUrl, aiAlternative.getReason(), aiAlternative.getStrengths()));
             if (alternatives.size() >= MAX_ALTERNATIVES) break;
         }
         return alternatives;

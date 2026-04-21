@@ -1,20 +1,17 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+// Repræsenterer ét champion-valg i et LoL-draft med rolle, navn og ikon.
+// Oprettes i kode (kræver @AllArgsConstructor) og deserialiseres fra frontend
+// via CoachRequest (kræver @NoArgsConstructor til Jackson).
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class DraftPick {
     private String role;
     private String championName;
     private String iconUrl;
-
-    public DraftPick(String role, String championName, String iconUrl) {
-        this.role = role;
-        this.championName = championName;
-        this.iconUrl = iconUrl;
-    }
 }

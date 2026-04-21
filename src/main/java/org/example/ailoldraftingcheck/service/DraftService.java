@@ -1,6 +1,7 @@
 package org.example.ailoldraftingcheck.service;
 
-import tools.jackson.databind.JsonNode;
+import org.example.ailoldraftingcheck.dtos.AiMatchup;
+import org.example.ailoldraftingcheck.dtos.AiChampionEntry;
 import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.DraftPick;
 import org.example.ailoldraftingcheck.dtos.DraftResponse;
@@ -40,11 +41,11 @@ public class DraftService {
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, "User role: " + userRole);
 
         try {
-            // JsonNode er Jacksons "træ-model" til at navigere JSON dynamisk,
-            // uden at skulle deserialisere hele svaret til en fast Java-klasse.
-            JsonNode responseJson = openAiService.parseJsonReply(aiReply);
-            List<DraftPick> enemyTeam = buildTeamPicks(responseJson.get("enemy"), null);
-            List<DraftPick> allyTeam = buildTeamPicks(responseJson.get("ally"), userRole);
+            // Jackson deserialiserer JSON-svaret direkte til AiMatchup
+            // uden at vi behøver at navigere et JSON-træ manuelt.
+            AiMatchup aiDraft = openAiService.parseJsonReply(aiReply, AiMatchup.class);
+            List<DraftPick> enemyTeam = resolveTeamPicks(aiDraft.getEnemy(), null);
+            List<DraftPick> allyTeam = resolveTeamPicks(aiDraft.getAlly(), userRole);
             return new DraftResponse(userRole, enemyTeam, allyTeam);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -63,23 +64,16 @@ public class DraftService {
         return userRole;
     }
 
-    private List<DraftPick> buildTeamPicks(JsonNode jsonArray, String excludedRole) {
+    private List<DraftPick> resolveTeamPicks(List<AiChampionEntry> aiPicks, String excludedRole) {
+        if (aiPicks == null) return List.of();
+
         List<DraftPick> picks = new ArrayList<>();
-
-        // .isArray() tjekker om JsonNode-en indeholder et JSON-array ([ ... ]).
-        // Det er en sikkerhedstjek — AI'en kan i sjældne tilfælde svare forkert.
-        if (jsonArray == null || !jsonArray.isArray()) return picks;
-
-        for (JsonNode pickNode : jsonArray) {
-            // .path("role") læser feltet "role" sikkert — returnerer en tom node
-            // frem for null hvis feltet mangler, hvilket undgår NullPointerException.
-            String role = normalizeRole(pickNode.path("role").asText("").toUpperCase(Locale.ROOT));
-            String championName = pickNode.path("champion").asText("");
-
+        for (AiChampionEntry aiPick : aiPicks) {
+            String role = normalizeRole(aiPick.getRole().toUpperCase(Locale.ROOT));
             if (shouldSkipPick(role, excludedRole)) continue;
 
             // Optional bruges her fordi en champion måske ikke kendes i Data Dragon.
-            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(championName);
+            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(aiPick.getChampion());
             if (maybeChampion.isEmpty()) continue;
 
             picks.add(new DraftPick(role, maybeChampion.get().getName(), maybeChampion.get().getIconUrl()));

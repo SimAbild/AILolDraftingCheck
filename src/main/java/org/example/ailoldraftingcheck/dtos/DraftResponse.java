@@ -1,22 +1,18 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
+// Det komplette draft-svar der sendes til frontend:
+// brugerens valgte rolle, fjendehold og allieret hold.
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class DraftResponse {
     private String userRole;
     private List<DraftPick> enemyTeam;
     private List<DraftPick> allyTeam;
-
-    public DraftResponse(String userRole, List<DraftPick> enemyTeam, List<DraftPick> allyTeam) {
-        this.userRole = userRole;
-        this.enemyTeam = enemyTeam;
-        this.allyTeam = allyTeam;
-    }
 }
