@@ -6,7 +6,6 @@ import org.example.ailoldraftingcheck.dtos.CoachResponse;
 import org.example.ailoldraftingcheck.dtos.DraftPickRequest;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +39,6 @@ public class CoachService {
         return team.stream()
                 .map(pick -> pick.getRole() + ":" + pick.getChampionName())
                 .collect(Collectors.joining(", "));
-    }
-
-    public JsonNode parseAiReply(String content) throws Exception {
-        String cleanContent = content.trim();
-        if (cleanContent.startsWith("```")) {
-            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
-        }
-        return JsonMapper.builder().build().readTree(cleanContent);
     }
 
     public List<String> extractStringList(JsonNode jsonArray) {

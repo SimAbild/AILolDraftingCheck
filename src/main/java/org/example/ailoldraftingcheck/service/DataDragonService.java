@@ -16,7 +16,6 @@ import java.util.*;
 public class DataDragonService {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDragonService.class);
-    private static final String FALLBACK_PATCH = "14.7.1";
     private static final String DATA_DRAGON_BASE_URL = "https://ddragon.leagueoflegends.com";
     private static final String VERSIONS_URL = DATA_DRAGON_BASE_URL + "/api/versions.json";
     private static final int NEWEST_PATCH_INDEX = 0;
@@ -35,12 +34,7 @@ public class DataDragonService {
             String latestPatch = fetchLatestPatch();
             loadChampions(latestPatch);
         } catch (Exception e) {
-            logger.warn("Data Dragon failed ({}), using fallback patch {}", e.getMessage(), FALLBACK_PATCH);
-            try {
-                loadChampions(FALLBACK_PATCH);
-            } catch (Exception fallbackException) {
-                logger.error("Data Dragon fallback also failed", fallbackException);
-            }
+            logger.warn("Data Dragon failed ({})", e.getMessage());
         }
     }
 

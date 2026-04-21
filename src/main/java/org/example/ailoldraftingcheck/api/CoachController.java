@@ -48,7 +48,7 @@ public class CoachController {
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, userPrompt);
 
         try {
-            JsonNode responseJson = coachService.parseAiReply(aiReply);
+            JsonNode responseJson = openAiService.parseAiReply(aiReply);
             List<String> positives = coachService.extractStringList(responseJson.get("positives"));
             List<String> negatives = coachService.extractStringList(responseJson.get("negatives"));
             List<CoachResponse.Alternative> alternatives = coachService.parseChampionAlternatives(responseJson.get("alternatives"));

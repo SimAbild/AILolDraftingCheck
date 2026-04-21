@@ -2,6 +2,7 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
@@ -103,5 +104,13 @@ public class OpenAiService {
         int tokensUsed = chatResponse.getUsage().getTotal_tokens();
         logger.info("OpenAI tokens used: {}", tokensUsed);
         return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
+    }
+
+    public JsonNode parseAiReply(String content) throws Exception {
+        String cleanContent = content.trim();
+        if (cleanContent.startsWith("```")) {
+            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
+        }
+        return JsonMapper.builder().build().readTree(cleanContent);
     }
 }
