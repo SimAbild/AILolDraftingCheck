@@ -4,7 +4,9 @@ import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
 import org.example.ailoldraftingcheck.dtos.DraftPickRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
@@ -16,15 +18,43 @@ import java.util.stream.Collectors;
 public class CoachService {
 
     private final DataDragonService dataDragonService;
+    private final OpenAiService openAiService;
+
+    private static final String SYSTEM_MESSAGE =
+            "You are a League of Legends drafting coach." +
+                    " You will receive the user's role + chosen champion, their 4 ally picks, and the 5 enemy picks." +
+                    " Use champion knowledge about synergies with the ally team and counters to the enemy team." +
+                    " Reply with STRICT JSON only, no markdown, in this exact shape:" +
+                    " {\"positives\":[\"short sentence 1\",\"short sentence 2\",\"short sentence 3\"]," +
+                    " \"negatives\":[\"short sentence 1\",\"short sentence 2\",\"short sentence 3\"]," +
+                    " \"alternatives\":[" +
+                    " {\"champion\":\"Name\",\"reason\":\"one short sentence\"}," +
+                    " {\"champion\":\"Name\",\"reason\":\"...\"}," +
+                    " {\"champion\":\"Name\",\"reason\":\"...\"}]}" +
+                    " Keep each bullet short. Alternatives must be real League champions that fit the user's role.";
 
     private static final int MAX_ALTERNATIVES = 3;
 
-    public CoachService(DataDragonService dataDragonService) {
+    public CoachService(DataDragonService dataDragonService, OpenAiService openAiService) {
         this.dataDragonService = dataDragonService;
+        this.openAiService = openAiService;
     }
 
-    public boolean isMissingRequiredFields(CoachRequest coachRequest) {
-        return coachRequest.getUserChampion() == null || coachRequest.getUserRole() == null;
+    public CoachResponse analyzeChampionPick(CoachRequest coachRequest) {
+
+        String userPrompt = buildUserPrompt(coachRequest);
+        String aiReply = openAiService.chat(SYSTEM_MESSAGE, userPrompt);
+
+        try {
+            JsonNode responseJson = openAiService.parseAiReply(aiReply);
+            List<String> positives = extractStringList(responseJson.get("positives"));
+            List<String> negatives = extractStringList(responseJson.get("negatives"));
+            List<CoachResponse.Alternative> alternatives = parseChampionAlternatives(responseJson.get("alternatives"));
+            return new CoachResponse(positives, negatives, alternatives);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "AI returned invalid JSON. Please try again.");
+        }
     }
 
     public String buildUserPrompt(CoachRequest coachRequest) {
