@@ -1,12 +1,5 @@
 function onSearchInput(ev) {
     const searchQuery = ev.target.value.trim().toLowerCase();
-    const suggestionsList = document.getElementById('champ-suggestions');
-
-    if (!searchQuery) {
-        suggestionsList.innerHTML = '';
-        return;
-    }
-
     const matchingChampions = currentDraft.allChampions
         .filter(champion => champion.name.toLowerCase().startsWith(searchQuery))
         .slice(0, MAX_SUGGESTIONS);
@@ -14,19 +7,18 @@ function onSearchInput(ev) {
     let suggestionsHtml = '';
     for (const champion of matchingChampions) {
         suggestionsHtml += `
-            <li class="suggestion-item list-group-item"
+            <li class="suggestion-item"
                 data-id="${champion.id}"
                 data-name="${champion.name}"
                 data-icon="${champion.iconUrl}">
                 <img src="${champion.iconUrl}" alt=""/> ${champion.name}
             </li>`;
     }
-    suggestionsList.innerHTML = suggestionsHtml;
+    document.getElementById('champ-suggestions').innerHTML = suggestionsHtml;
 }
 
 function onSuggestionClick(ev) {
     const selectedSuggestion = ev.target.closest('li');
-    if (!selectedSuggestion) return;
 
     currentDraft.userChampion = {
         id: selectedSuggestion.dataset.id,

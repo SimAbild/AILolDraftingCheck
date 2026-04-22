@@ -1,7 +1,7 @@
 package org.example.ailoldraftingcheck.service;
 
-import org.example.ailoldraftingcheck.dtos.AiMatchup;
-import org.example.ailoldraftingcheck.dtos.AiChampionEntry;
+import org.example.ailoldraftingcheck.dtos.AiDraft;
+import org.example.ailoldraftingcheck.dtos.AiDraftChampionEntry;
 import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.DraftPick;
 import org.example.ailoldraftingcheck.dtos.DraftResponse;
@@ -37,13 +37,13 @@ public class DraftService {
     }
 
     public DraftResponse generateDraft(String rawRole) {
-        String userRole = validateRole(rawRole);
+        String userRole = rawRole.toUpperCase();
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, "User role: " + userRole);
 
         try {
-            // Jackson deserialiserer JSON-svaret direkte til AiMatchup
+            // Jackson deserialiserer JSON-svaret direkte til AiDraft
             // uden at vi behøver at navigere et JSON-træ manuelt.
-            AiMatchup aiDraft = openAiService.parseJsonReply(aiReply, AiMatchup.class);
+            AiDraft aiDraft = openAiService.parseJsonReply(aiReply, AiDraft.class);
             List<DraftPick> enemyTeam = resolveTeamPicks(aiDraft.getEnemy(), null);
             List<DraftPick> allyTeam = resolveTeamPicks(aiDraft.getAlly(), userRole);
             return new DraftResponse(userRole, enemyTeam, allyTeam);
@@ -53,22 +53,11 @@ public class DraftService {
         }
     }
 
-    private String validateRole(String rawRole) {
-        String userRole = Optional.ofNullable(rawRole)
-                .map(String::toUpperCase)
-                .orElse("");
-        if (!VALID_ROLES.contains(userRole)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "role must be one of " + VALID_ROLES);
-        }
-        return userRole;
-    }
-
-    private List<DraftPick> resolveTeamPicks(List<AiChampionEntry> aiPicks, String excludedRole) {
+    private List<DraftPick> resolveTeamPicks(List<AiDraftChampionEntry> aiPicks, String excludedRole) {
         if (aiPicks == null) return List.of();
 
         List<DraftPick> picks = new ArrayList<>();
-        for (AiChampionEntry aiPick : aiPicks) {
+        for (AiDraftChampionEntry aiPick : aiPicks) {
             String role = normalizeRole(aiPick.getRole().toUpperCase(Locale.ROOT));
             if (shouldSkipPick(role, excludedRole)) continue;
 

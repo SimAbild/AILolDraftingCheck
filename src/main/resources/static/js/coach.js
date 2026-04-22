@@ -1,34 +1,52 @@
-function initCoach() {
+function showCoachView(isLoading, coachAnalysis) {
+    showView(buildCoachHtml(isLoading, coachAnalysis));
     document.getElementById('start-new-draft').addEventListener('click', onStartNewDraftClicked);
 }
 
-function renderCoachSection(isLoading, coachAnalysis) {
-    document.getElementById('coach-spinner').style.display = isLoading ? 'block' : 'none';
+function buildCoachHtml(isLoading, coachAnalysis) {
+    return `
+        <div class="section-header">
+            <span class="section-header__step">Step 3</span>
+            <h2 class="section-header__title">Coach feedback</h2>
+        </div>
+        <div class="section-card">
+            ${isLoading ? buildSpinnerHtml() : buildCoachFeedbackHtml(coachAnalysis)}
+            ${buildCoachDraftBoardHtml()}
+            <div class="section-actions">
+                <button type="button" id="start-new-draft" class="btn-secondary">← Start a new draft</button>
+            </div>
+        </div>`;
+}
 
-    document.getElementById('ally-team-final').innerHTML =
-        buildTeamLineupHtml(currentDraft.allyTeam, currentDraft.userRole, currentDraft.userChampion);
-    document.getElementById('enemy-team-final').innerHTML =
-        buildTeamLineupHtml(currentDraft.enemyTeam, null, null);
+function buildCoachDraftBoardHtml() {
+    const allyLineup = buildTeamLineupHtml(currentDraft.allyTeam, currentDraft.userRole, currentDraft.userChampion);
+    const enemyLineup = buildTeamLineupHtml(currentDraft.enemyTeam, null, null);
+    return `
+        <div class="draft-board">
+            <div id="ally-team-final" class="team-col">${allyLineup}</div>
+            <div class="vs-label">VS</div>
+            <div id="enemy-team-final" class="team-col">${enemyLineup}</div>
+        </div>`;
+}
 
-    if (isLoading || !coachAnalysis) {
-        document.getElementById('coach-positives').innerHTML = '';
-        document.getElementById('coach-negatives').innerHTML = '';
-        document.getElementById('coach-alternatives').innerHTML = '';
-        return;
-    }
-
-    document.getElementById('coach-positives').innerHTML =
-        buildFeedbackListHtml(coachAnalysis.positives);
-    document.getElementById('coach-negatives').innerHTML =
-        buildFeedbackListHtml(coachAnalysis.negatives);
-    document.getElementById('coach-alternatives').innerHTML =
-        buildAlternativesHtml(coachAnalysis.alternatives);
+function buildCoachFeedbackHtml(coachAnalysis) {
+    return `
+        <div class="feedback-grid">
+            <div>
+                <h6>What works</h6>
+                <ul class="feedback-list">${buildFeedbackListHtml(coachAnalysis.positives)}</ul>
+            </div>
+            <div>
+                <h6>What doesn't work</h6>
+                <ul class="feedback-list">${buildFeedbackListHtml(coachAnalysis.negatives)}</ul>
+            </div>
+        </div>
+        <h6 class="alternatives-title">Stronger alternative champions</h6>
+        <div>${buildAlternativesHtml(coachAnalysis.alternatives)}</div>`;
 }
 
 function onStartNewDraftClicked() {
-    hideSection('section-coach');
-    revealSection('section-home');
     currentDraft.userRole = null;
     currentDraft.userChampion = null;
-    hideError();
+    showHomeView();
 }

@@ -1,9 +1,9 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tools.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -23,11 +23,14 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AiChampionRecommendation {
+public class AiCoachChampAlternative {
 
     @JsonProperty("champion")
     private String championName;
 
+    @JsonProperty("reason")
     private String reason;
+
+    @JsonProperty("strengths")
     private List<String> strengths;
 }

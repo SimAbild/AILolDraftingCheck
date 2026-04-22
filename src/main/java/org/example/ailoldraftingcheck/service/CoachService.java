@@ -1,6 +1,6 @@
 package org.example.ailoldraftingcheck.service;
 
-import org.example.ailoldraftingcheck.dtos.AiChampionRecommendation;
+import org.example.ailoldraftingcheck.dtos.AiCoachChampAlternative;
 import org.example.ailoldraftingcheck.dtos.AiCoachAnalysis;
 import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
@@ -61,11 +61,6 @@ public class CoachService {
     }
 
     public CoachResponse analyzeChampionPick(CoachRequest coachRequest) {
-        if (isMissingRequiredFields(coachRequest)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "userChampion and userRole are required");
-        }
-
         String userPrompt = buildUserPrompt(coachRequest);
         String aiReply = openAiService.chat(SYSTEM_MESSAGE, userPrompt);
 
@@ -79,10 +74,6 @@ public class CoachService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "AI returned invalid JSON. Please try again.");
         }
-    }
-
-    private boolean isMissingRequiredFields(CoachRequest coachRequest) {
-        return coachRequest.getUserChampion() == null || coachRequest.getUserRole() == null;
     }
 
     private String buildUserPrompt(CoachRequest coachRequest) {
@@ -99,11 +90,11 @@ public class CoachService {
                 .collect(Collectors.joining(", "));
     }
 
-    private List<CoachResponse.Alternative> resolveChampionAlternatives(List<AiChampionRecommendation> aiRecommendations) {
+    private List<CoachResponse.Alternative> resolveChampionAlternatives(List<AiCoachChampAlternative> aiRecommendations) {
         if (aiRecommendations == null) return List.of();
 
         List<CoachResponse.Alternative> alternatives = new ArrayList<>();
-        for (AiChampionRecommendation aiAlternative : aiRecommendations) {
+        for (AiCoachChampAlternative aiAlternative : aiRecommendations) {
             // Optional bruges her fordi en champion måske ikke kendes i Data Dragon.
             Optional<Champion> maybeChampion = dataDragonService.findChampionByName(aiAlternative.getChampionName());
             String iconUrl = maybeChampion.map(Champion::getIconUrl).orElse("");

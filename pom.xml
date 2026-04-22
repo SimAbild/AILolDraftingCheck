@@ -38,13 +38,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Jackson annotations giver @JsonProperty til at mappe JSON-feltnavne
-             til Java-feltnavne når de er forskellige — f.eks. "champion" → championName. -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
