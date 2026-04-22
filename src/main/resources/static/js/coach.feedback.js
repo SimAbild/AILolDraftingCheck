@@ -1,9 +1,9 @@
-function buildFeedbackListHtml(items) {
-    let listHtml = '';
-    for (const item of items) {
-        listHtml += `<li class="feedback-list__item">${item}</li>`;
+function buildFeedbackListHtml(feedbackItems) {
+    let feedbackHtml = '';
+    for (const feedbackItem of feedbackItems) {
+        feedbackHtml += `<li class="feedback-list__item">${feedbackItem}</li>`;
     }
-    return listHtml;
+    return feedbackHtml;
 }
 
 function buildAlternativesHtml(alternatives) {
@@ -26,10 +26,10 @@ function buildAlternativesHtml(alternatives) {
 }
 
 function buildStrengthBulletsHtml(strengths) {
-    let bulletsHtml = '<ul class="alt-card__strengths">';
+    let strengthsHtml = '<ul class="alt-card__strengths">';
     for (const strength of strengths) {
-        bulletsHtml += `<li>${strength}</li>`;
+        strengthsHtml += `<li>${strength}</li>`;
     }
-    bulletsHtml += '</ul>';
-    return bulletsHtml;
+    strengthsHtml += '</ul>';
+    return strengthsHtml;
 }

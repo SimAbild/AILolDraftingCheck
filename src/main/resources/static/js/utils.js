@@ -1,7 +1,7 @@
 // Erstatter hele indholdet i .content med den givne HTML-streng.
 // Dette er kernen i one-page designet — kun ét view er synligt ad gangen.
-function showView(html) {
-    document.querySelector('.content').innerHTML = html;
+function showView(viewHtml) {
+    document.querySelector('.content').innerHTML = viewHtml;
 }
 
 function showError(message) {

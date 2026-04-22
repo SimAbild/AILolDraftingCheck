@@ -5,8 +5,8 @@ function showHomeView() {
 
 function attachRoleButtonListeners() {
     const roleButtons = document.querySelectorAll('.role-btn');
-    for (const btn of roleButtons) {
-        btn.addEventListener('click', function() {
+    for (const roleButton of roleButtons) {
+        roleButton.addEventListener('click', function() {
             onRolePicked(this.dataset.role);
         });
     }

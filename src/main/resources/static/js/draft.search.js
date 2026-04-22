@@ -1,5 +1,5 @@
-function onSearchInput(ev) {
-    const searchQuery = ev.target.value.trim().toLowerCase();
+function onSearchInput(event) {
+    const searchQuery = event.target.value.trim().toLowerCase();
     const matchingChampions = currentDraft.allChampions
         .filter(champion => champion.name.toLowerCase().startsWith(searchQuery))
         .slice(0, MAX_SUGGESTIONS);
@@ -17,8 +17,8 @@ function onSearchInput(ev) {
     document.getElementById('champ-suggestions').innerHTML = suggestionsHtml;
 }
 
-function onSuggestionClick(ev) {
-    const selectedSuggestion = ev.target.closest('li');
+function onSuggestionClick(event) {
+    const selectedSuggestion = event.target.closest('li');
 
     currentDraft.userChampion = {
         id: selectedSuggestion.dataset.id,

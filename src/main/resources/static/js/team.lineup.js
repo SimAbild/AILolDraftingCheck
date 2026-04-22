@@ -7,7 +7,7 @@ function buildTeamLineupHtml(team, userRole, userChampion) {
                 : buildEmptyPickHtml(role);
             continue;
         }
-        const pick = team.find(teamPick => teamPick.role === role);
+        const pick = team.find(pick => pick.role === role);
         lineupHtml += pick ? buildPickedChampionHtml(pick) : buildEmptyPickHtml(role);
     }
     return lineupHtml;
