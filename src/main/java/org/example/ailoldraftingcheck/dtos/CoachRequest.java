@@ -21,8 +21,8 @@ public class CoachRequest {
     private String userChampion;
 
     @JsonProperty("allyTeam")
-    private List<DraftPick> allyTeam;
+    private List<DraftPickRequest> allyTeam;
 
     @JsonProperty("enemyTeam")
-    private List<DraftPick> enemyTeam;
+    private List<DraftPickRequest> enemyTeam;
 }

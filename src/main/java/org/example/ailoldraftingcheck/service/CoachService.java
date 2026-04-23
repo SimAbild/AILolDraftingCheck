@@ -1,16 +1,13 @@
 package org.example.ailoldraftingcheck.service;
 
-import org.example.ailoldraftingcheck.dtos.AiCoachChampAlternative;
-import org.example.ailoldraftingcheck.dtos.AiCoachAnalysis;
-import org.example.ailoldraftingcheck.dtos.Champion;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
-import org.example.ailoldraftingcheck.dtos.DraftPick;
+import org.example.ailoldraftingcheck.dtos.DraftPickRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,11 +50,9 @@ public class CoachService {
             " Alternatives must be real League of Legends champions that fit the user's role.";
 
     private final OpenAiService openAiService;
-    private final DataDragonService dataDragonService;
 
-    public CoachService(OpenAiService openAiService, DataDragonService dataDragonService) {
+    public CoachService(OpenAiService openAiService) {
         this.openAiService = openAiService;
-        this.dataDragonService = dataDragonService;
     }
 
     public CoachResponse analyzeChampionPick(CoachRequest coachRequest) {
@@ -67,9 +62,7 @@ public class CoachService {
         try {
             // Jackson deserialiserer JSON-svaret direkte til AiCoachAnalysis,
             // inklusiv de indlejrede lister af strings og AiChampionRecommendation-objekter.
-            AiCoachAnalysis aiCoach = openAiService.parseJsonReply(aiReply, AiCoachAnalysis.class);
-            List<CoachResponse.Alternative> alternatives = resolveChampionAlternatives(aiCoach.getAlternatives());
-            return new CoachResponse(aiCoach.getPositives(), aiCoach.getNegatives(), alternatives);
+            return openAiService.parseJsonReply(aiReply, CoachResponse.class);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "AI returned invalid JSON. Please try again.");
@@ -83,26 +76,11 @@ public class CoachService {
                "\nenemy_team (5): " + formatTeamForPrompt(coachRequest.getEnemyTeam());
     }
 
-    private String formatTeamForPrompt(List<DraftPick> team) {
+    private String formatTeamForPrompt(List<DraftPickRequest> team) {
         if (team == null || team.isEmpty()) return "(none)";
         return team.stream()
-                .map(pick -> pick.getRole() + ":" + pick.getChampionName())
+                .map(pick -> pick.getRole() + ":" + pick.getName())
                 .collect(Collectors.joining(", "));
     }
 
-    private List<CoachResponse.Alternative> resolveChampionAlternatives(List<AiCoachChampAlternative> aiRecommendations) {
-        if (aiRecommendations == null) return List.of();
-
-        List<CoachResponse.Alternative> alternatives = new ArrayList<>();
-        for (AiCoachChampAlternative aiAlternative : aiRecommendations) {
-            // Optional bruges her fordi en champion måske ikke kendes i Data Dragon.
-            Optional<Champion> maybeChampion = dataDragonService.findChampionByName(aiAlternative.getChampionName());
-            String iconUrl = maybeChampion.map(Champion::getIconUrl).orElse("");
-            String resolvedName = maybeChampion.map(Champion::getName).orElse(aiAlternative.getChampionName());
-
-            alternatives.add(new CoachResponse.Alternative(resolvedName, iconUrl, aiAlternative.getReason(), aiAlternative.getStrengths()));
-            if (alternatives.size() >= MAX_ALTERNATIVES) break;
-        }
-        return alternatives;
-    }
 }

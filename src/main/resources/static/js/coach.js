@@ -10,8 +10,9 @@ function buildCoachHtml(isLoading, coachAnalysis) {
             <h2 class="section-header__title">Coach feedback</h2>
         </div>
         <div class="section-card">
-            ${isLoading ? buildSpinnerHtml() : buildCoachFeedbackHtml(coachAnalysis)}
+            ${isLoading ? buildSpinnerHtml() : ''}
             ${buildCoachDraftBoardHtml()}
+            ${!isLoading ? buildCoachFeedbackHtml(coachAnalysis) : ''}
             <div class="section-actions">
                 <button type="button" id="start-new-draft" class="btn-secondary">← Start a new draft</button>
             </div>
@@ -48,5 +49,7 @@ function buildCoachFeedbackHtml(coachAnalysis) {
 function onStartNewDraftClicked() {
     currentDraft.userRole = null;
     currentDraft.userChampion = null;
+    currentDraft.allyTeam = [];
+    currentDraft.enemyTeam = [];
     showHomeView();
 }

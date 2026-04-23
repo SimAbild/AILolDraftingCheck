@@ -1,6 +1,7 @@
 package org.example.ailoldraftingcheck.service;
 
-import tools.jackson.databind.JsonNode;
+import org.example.ailoldraftingcheck.dtos.DataDragonResponse;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import jakarta.annotation.PostConstruct;
@@ -16,30 +17,18 @@ import java.util.*;
 public class DataDragonService {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDragonService.class);
-    private static final String FALLBACK_PATCH = "14.7.1";
+    private static final String FALLBACK_PATCH = "16.8.1";
     private static final String DATA_DRAGON_BASE_URL = "https://ddragon.leagueoflegends.com";
     private static final String VERSIONS_URL = DATA_DRAGON_BASE_URL + "/api/versions.json";
     private static final int NEWEST_PATCH_INDEX = 0;
 
-    // WebClient er Springs HTTP-klient til at kalde eksterne API'er.
-    // Den er bygget til at arbejde asynkront, men .block() bruges her
-    // for at vente på svaret og holde koden sekventiel — som et normalt metodekald.
     private final WebClient webClient = WebClient.builder().build();
-
-    // ObjectMapper (fra Jackson-biblioteket) er motoren bag konvertering
-    // mellem JSON-tekst og Java. Den kan både:
-    //   JSON-tekst → Java-objekt   (deserialisering)
-    //   Java-objekt → JSON-tekst   (serialisering)
-    // JsonMapper er Jackson 3's moderne variant af den klassiske ObjectMapper.
     private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     private final List<Champion> champions = new ArrayList<>();
-    private final Map<String, Champion> championsByLowercaseName = new HashMap<>();
 
-    // @PostConstruct fortæller Spring at denne metode skal køres automatisk
-    // én gang, lige efter at beanen er oprettet og alle dens afhængigheder
-    // er injiceret. Det er den korrekte måde at lave opstartslogik på i Spring
-    // — aldrig i konstruktøren, da afhængigheder endnu ikke er klar der.
+
+
     @PostConstruct
     public void load() {
         try {
@@ -61,17 +50,17 @@ public class DataDragonService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
-        return jsonMapper.readTree(versionsJson).get(NEWEST_PATCH_INDEX).asText();
+        List<String> versions = jsonMapper.readValue(versionsJson, new TypeReference<>() {});
+        return versions.get(NEWEST_PATCH_INDEX);
     }
 
     private void loadChampions(String patch) throws Exception {
         String championsJson = fetchChampionData(patch);
-        JsonNode championDataNode = jsonMapper.readTree(championsJson).get("data");
+        DataDragonResponse response = jsonMapper.readValue(championsJson, DataDragonResponse.class);
 
-        for (Map.Entry<String, JsonNode> entry : championDataNode.properties()) {
-            Champion champion = parseChampion(patch, entry);
+        for (Champion champion : response.getData().values()) {
+            champion.setIconUrl(DATA_DRAGON_BASE_URL + "/cdn/" + patch + "/img/champion/" + champion.getId() + ".png");
             champions.add(champion);
-            championsByLowercaseName.put(champion.getName().toLowerCase(Locale.ROOT), champion);
         }
 
         champions.sort(Comparator.comparing(Champion::getName));
@@ -87,25 +76,8 @@ public class DataDragonService {
                 .block();
     }
 
-    private Champion parseChampion(String patch, Map.Entry<String, JsonNode> entry) {
-        String championId = entry.getKey();
-        String championName = entry.getValue().get("name").asText();
-        String iconUrl = DATA_DRAGON_BASE_URL + "/cdn/" + patch + "/img/champion/" + championId + ".png";
-        return new Champion(championId, championName, iconUrl);
-    }
-
     public List<Champion> getAllChampions() {
         return List.copyOf(champions);
     }
 
-    // Optional<T> er Javas container til en værdi der måske ikke eksisterer.
-    // I stedet for at returnere null (som kan give NullPointerException overalt),
-    // returnerer vi Optional.empty() hvis champion ikke kendes,
-    // eller Optional.of(champion) hvis den gør.
-    // Kalderen tvinges derved til aktivt at forholde sig til begge tilfælde
-    // — f.eks. med .map(), .orElse() eller .isEmpty().
-    public Optional<Champion> findChampionByName(String name) {
-        if (name == null) return Optional.empty();
-        return Optional.ofNullable(championsByLowercaseName.get(name.toLowerCase(Locale.ROOT)));
-    }
 }

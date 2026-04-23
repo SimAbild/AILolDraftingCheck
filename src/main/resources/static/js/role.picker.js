@@ -37,7 +37,7 @@ async function onRolePicked(role) {
     showDraftView(true);
 
     const draft = await apiPostDraft(role);
-    currentDraft.enemyTeam = draft.enemyTeam;
-    currentDraft.allyTeam = draft.allyTeam;
+    currentDraft.enemyTeam = draft.enemy;
+    currentDraft.allyTeam = draft.ally;
     showDraftView(false);
 }

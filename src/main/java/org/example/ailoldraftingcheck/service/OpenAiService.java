@@ -83,6 +83,7 @@ public class OpenAiService {
         chatRequest.setTopP(topP);
         chatRequest.setFrequencyPenalty(frequencyPenalty);
         chatRequest.setPresencePenalty(presencePenalty);
+        chatRequest.setResponseFormat(new ChatCompletionRequest.ResponseFormat("json_object"));
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
         return chatRequest;
@@ -116,17 +117,8 @@ public class OpenAiService {
         return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
     }
 
-    // Renser AI-svaret og deserialiserer det direkte til den ønskede Java-type.
-    // AI'en pakker sommetider svaret ind i ```json ... ``` — det fjernes inden parsing.
-    //
-    // <T> er en generisk type-parameter: metoden kan returnere hvilken som helst type,
-    // alt efter hvad kalderen angiver som responseType.
-    // Eksempel: parseJsonReply(aiReply, AiMatchup.class) returnerer en AiMatchup.
+
     public <T> T parseJsonReply(String content, Class<T> responseType) throws Exception {
-        String cleanContent = content.trim();
-        if (cleanContent.startsWith("```")) {
-            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
-        }
-        return jsonMapper.readValue(cleanContent, responseType);
+        return jsonMapper.readValue(content, responseType);
     }
 }

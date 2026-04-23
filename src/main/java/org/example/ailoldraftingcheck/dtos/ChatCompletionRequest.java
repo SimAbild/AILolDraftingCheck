@@ -33,6 +33,18 @@ public class ChatCompletionRequest {
     @JsonProperty("presence_penalty")
     private double presencePenalty;
 
+    @JsonProperty("response_format")
+    private ResponseFormat responseFormat;
+
+    @Getter
+    public static class ResponseFormat {
+        private final String type;
+
+        public ResponseFormat(String type) {
+            this.type = type;
+        }
+    }
+
     @Getter
     @Setter
     public static class Message {

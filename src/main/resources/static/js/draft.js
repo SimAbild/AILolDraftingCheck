@@ -53,6 +53,8 @@ function buildChampionPickerHtml() {
 function onNewRoleClicked() {
     currentDraft.userRole = null;
     currentDraft.userChampion = null;
+    currentDraft.allyTeam = [];
+    currentDraft.enemyTeam = [];
     showHomeView();
 }
 

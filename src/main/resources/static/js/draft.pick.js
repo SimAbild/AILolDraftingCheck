@@ -1,12 +1,13 @@
 function buildPickedChampionHtml(pick) {
-    const iconImage = pick.iconUrl
-        ? `<img src="${pick.iconUrl}" alt="${pick.championName}"/>`
+    const champion = currentDraft.allChampions.find(c => c.name.toLowerCase() === pick.name?.toLowerCase());
+    const iconImage = champion
+        ? `<img src="${champion.iconUrl}" alt="${pick.name}"/>`
         : '';
     return `
         <div class="pick-card">
             <div class="pick-card__role">${pick.role}</div>
             <div class="pick-card__icon">${iconImage}</div>
-            <div class="pick-card__name">${pick.championName}</div>
+            <div class="pick-card__name">${pick.name}</div>
         </div>`;
 }
 

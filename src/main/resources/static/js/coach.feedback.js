@@ -9,14 +9,15 @@ function buildFeedbackListHtml(feedbackItems) {
 function buildAlternativesHtml(alternatives) {
     let alternativesHtml = '';
     for (const alternative of alternatives) {
-        const iconImage = alternative.iconUrl
-            ? `<img src="${alternative.iconUrl}" alt=""/>`
+        const champion = currentDraft.allChampions.find(c => c.name.toLowerCase() === alternative.name?.toLowerCase());
+        const iconImage = champion
+            ? `<img src="${champion.iconUrl}" alt=""/>`
             : '';
         alternativesHtml += `
             <div class="alt-card">
                 ${iconImage}
                 <div class="alt-card__body">
-                    <div class="alt-card__name">${alternative.championName}</div>
+                    <div class="alt-card__name">${alternative.name}</div>
                     <div class="alt-card__reason">${alternative.reason}</div>
                     ${buildStrengthBulletsHtml(alternative.strengths)}
                 </div>

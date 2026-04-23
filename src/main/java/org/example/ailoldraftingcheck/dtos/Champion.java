@@ -1,17 +1,22 @@
 package org.example.ailoldraftingcheck.dtos;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-// Repræsenterer en LoL-champion hentet fra Riot's Data Dragon API.
-// Sendes til frontend som JSON — Jackson bruger @Getter til serialisering.
-// @NoArgsConstructor er påkrævet for Jackson-deserialisering.
 @Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Champion {
+
+    @JsonProperty("id")
     private String id;
+
+    @JsonProperty("name")
     private String name;
+
     private String iconUrl;
 }
