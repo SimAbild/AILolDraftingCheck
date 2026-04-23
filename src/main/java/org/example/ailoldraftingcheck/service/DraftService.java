@@ -1,6 +1,6 @@
 package org.example.ailoldraftingcheck.service;
 
-import org.example.ailoldraftingcheck.dtos.DraftPickRequest;
+import org.example.ailoldraftingcheck.dtos.DraftPick;
 import org.example.ailoldraftingcheck.dtos.DraftResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -46,15 +46,15 @@ public class DraftService {
         }
     }
 
-    private List<DraftPickRequest> resolveTeamPicks(List<DraftPickRequest> picks, String excludedRole) {
+    private List<DraftPick> resolveTeamPicks(List<DraftPick> picks, String excludedRole) {
         if (picks == null) return List.of();
 
-        List<DraftPickRequest> resolvedPicks = new ArrayList<>();
-        for (DraftPickRequest pick : picks) {
+        List<DraftPick> resolvedPicks = new ArrayList<>();
+        for (DraftPick pick : picks) {
             String role = normalizeRole(pick.getRole().toUpperCase(Locale.ROOT));
             if (shouldSkipPick(role, excludedRole)) continue;
 
-            resolvedPicks.add(new DraftPickRequest(role, pick.getName()));
+            resolvedPicks.add(new DraftPick(role, pick.getName()));
         }
         return resolvedPicks;
     }

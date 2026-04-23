@@ -13,8 +13,8 @@ import java.util.List;
 public class DraftResponse {
 
     @JsonProperty("enemy")
-    private List<DraftPickRequest> enemy;
+    private List<DraftPick> enemy;
 
     @JsonProperty("ally")
-    private List<DraftPickRequest> ally;
+    private List<DraftPick> ally;
 }

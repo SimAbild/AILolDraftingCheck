@@ -2,7 +2,7 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
-import org.example.ailoldraftingcheck.dtos.DraftPickRequest;
+import org.example.ailoldraftingcheck.dtos.DraftPick;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -76,7 +76,7 @@ public class CoachService {
                "\nenemy_team (5): " + formatTeamForPrompt(coachRequest.getEnemyTeam());
     }
 
-    private String formatTeamForPrompt(List<DraftPickRequest> team) {
+    private String formatTeamForPrompt(List<DraftPick> team) {
         if (team == null || team.isEmpty()) return "(none)";
         return team.stream()
                 .map(pick -> pick.getRole() + ":" + pick.getName())

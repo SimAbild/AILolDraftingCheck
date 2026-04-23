@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DraftPickRequest {
+public class DraftPick {
     private String role;
     private String name;
 }
