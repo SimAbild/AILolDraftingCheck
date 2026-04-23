@@ -111,6 +111,6 @@ public class OpenAiService {
         if (cleanContent.startsWith("```")) {
             cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
         }
-        return JsonMapper.builder().build().readTree(cleanContent);
+        return jsonMapper.readTree(cleanContent);
     }
 }
