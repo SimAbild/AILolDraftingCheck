@@ -72,7 +72,7 @@ src/main/resources/
         ├── api.js                 (fetch wrappers)
         ├── teamRender.js          (HTML for team columns)
         ├── home.js                (role buttons)
-        ├── draft.js               (draft view + autocomplete)
+        ├── draft.page.js               (draft view + autocomplete)
         ├── coach.js               (coach feedback view)
         └── main.js                (boot: wires everything up)
 ```
