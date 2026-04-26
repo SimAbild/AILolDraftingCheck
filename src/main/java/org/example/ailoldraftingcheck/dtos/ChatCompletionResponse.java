@@ -1,13 +1,18 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
 
+// OpenAI's API svarer med snake_case feltnavne.
+// @JsonProperty bruges på hvert felt der afviger fra Java's camelCase-konvention,
+// så Jackson kan mappe korrekt under deserialisering (JSON → Java).
 @Getter
 @Setter
 public class ChatCompletionResponse {
+
     private String id;
     private String object;
     private long created;
@@ -20,7 +25,9 @@ public class ChatCompletionResponse {
     public static class Choice {
         private int index;
         private Message message;
-        private String finish_reason;
+
+        @JsonProperty("finish_reason")
+        private String finishReason;
     }
 
     @Getter
@@ -33,8 +40,14 @@ public class ChatCompletionResponse {
     @Getter
     @Setter
     public static class Usage {
-        private int prompt_tokens;
-        private int completion_tokens;
-        private int total_tokens;
+
+        @JsonProperty("prompt_tokens")
+        private int promptTokens;
+
+        @JsonProperty("completion_tokens")
+        private int completionTokens;
+
+        @JsonProperty("total_tokens")
+        private int totalTokens;
     }
 }

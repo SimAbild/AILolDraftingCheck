@@ -1,5 +1,7 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -7,31 +9,21 @@ import lombok.Setter;
 import java.util.List;
 
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class CoachResponse {
     private List<String> positives;
     private List<String> negatives;
     private List<Alternative> alternatives;
 
-    public CoachResponse(List<String> positives, List<String> negatives, List<Alternative> alternatives) {
-        this.positives = positives;
-        this.negatives = negatives;
-        this.alternatives = alternatives;
-    }
-
     @Getter
     @Setter
     @NoArgsConstructor
+    @AllArgsConstructor
     public static class Alternative {
-        private String championName;
-        private String iconUrl;
+        @JsonAlias("champion")
+        private String name;
         private String reason;
-
-        public Alternative(String championName, String iconUrl, String reason) {
-            this.championName = championName;
-            this.iconUrl = iconUrl;
-            this.reason = reason;
-        }
+        private List<String> strengths;
     }
 }

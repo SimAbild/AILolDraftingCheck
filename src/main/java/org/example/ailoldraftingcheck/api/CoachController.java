@@ -1,11 +1,9 @@
 package org.example.ailoldraftingcheck.api;
 
-import org.example.ailoldraftingcheck.service.CoachService;
 import org.example.ailoldraftingcheck.dtos.CoachRequest;
 import org.example.ailoldraftingcheck.dtos.CoachResponse;
+import org.example.ailoldraftingcheck.service.CoachService;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/coach")

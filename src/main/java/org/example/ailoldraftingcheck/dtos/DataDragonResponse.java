@@ -5,16 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class DraftResponse {
-
-    @JsonProperty("enemy")
-    private List<DraftPick> enemy;
-
-    @JsonProperty("ally")
-    private List<DraftPick> ally;
+public class DataDragonResponse {
+    @JsonProperty("data")
+    private Map<String, Champion> data;
 }

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI LoL Drafting Coach</title>
+    <link rel="stylesheet" href="css/main.css">
+
+    <!-- Load order matters: constants → draft data → helpers → api → rendering → sections → app -->
+    <script defer src="js/config.js"></script>
+    <script defer src="js/draft.champion.placeholder.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/api.js"></script>
+    <script defer src="js/champ.pick.js"></script>
+    <script defer src="js/team.lineup.js"></script>
+    <script defer src="js/role.picker.js"></script>
+    <script defer src="js/champ.search.bar.js"></script>
+    <script defer src="js/draft.page.js"></script>
+    <script defer src="js/coach.feedback.js"></script>
+    <script defer src="js/coach.js"></script>
+    <script defer src="js/app.js"></script>
+</head>
+<body>
+
+<header>
+    <nav>
+        <a class="logo" href="#">AI LoL Drafting Coach</a>
+        <span class="nav-subtitle">A school project — AI is used, so some mistakes can happen.</span>
+    </nav>
+</header>
+
+<div id="error-banner" class="error-banner" style="display:none;"></div>
+
+<div class="content"></div>
+
+</body>
+</html>

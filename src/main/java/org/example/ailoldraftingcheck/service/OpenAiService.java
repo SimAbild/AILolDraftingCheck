@@ -2,7 +2,6 @@ package org.example.ailoldraftingcheck.service;
 
 import org.example.ailoldraftingcheck.dtos.ChatCompletionRequest;
 import org.example.ailoldraftingcheck.dtos.ChatCompletionResponse;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
@@ -50,11 +49,12 @@ public class OpenAiService {
 
     private final WebClient webClient;
 
-    private final ObjectMapper jsonMapper;
+    // ObjectMapper bruges her til at serialisere vores ChatCompletionRequest-objekt
+    // til en JSON-streng, som vi sender som request body til OpenAI's API.
+    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     public OpenAiService() {
         this.webClient = WebClient.builder().build();
-        this.jsonMapper = JsonMapper.builder().build();
     }
 
     public String chat(String systemMessage, String userMessage) {
@@ -79,16 +79,27 @@ public class OpenAiService {
         ChatCompletionRequest chatRequest = new ChatCompletionRequest();
         chatRequest.setModel(model);
         chatRequest.setTemperature(temperature);
-        chatRequest.setMax_tokens(maxTokens);
-        chatRequest.setTop_p(topP);
-        chatRequest.setFrequency_penalty(frequencyPenalty);
-        chatRequest.setPresence_penalty(presencePenalty);
+        chatRequest.setMaxTokens(maxTokens);
+        chatRequest.setTopP(topP);
+        chatRequest.setFrequencyPenalty(frequencyPenalty);
+        chatRequest.setPresencePenalty(presencePenalty);
+        chatRequest.setResponseFormat(new ChatCompletionRequest.ResponseFormat("json_object"));
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
         chatRequest.getMessages().add(new ChatCompletionRequest.Message("user", userMessage));
         return chatRequest;
     }
 
     private ChatCompletionResponse sendChatRequest(String requestBodyJson) throws Exception {
+        // WebClient bygger HTTP-kaldet som en kæde af metoder (fluent API).
+        // .post()              → HTTP POST-metode
+        // .uri()               → URL'en der kaldes
+        // .header()            → tilføjer Authorization-headeren med API-nøglen
+        // .contentType()       → fortæller serveren at vi sender JSON
+        // .accept()            → fortæller serveren at vi forventer JSON tilbage
+        // .body()              → request body — vores JSON-streng
+        // .retrieve()          → sender kaldet og henter svaret
+        // .bodyToMono()        → konverterer svaret til det ønskede Java-objekt
+        // .block()             → venter synkront på svaret (gør async til imperativ)
         return webClient.post()
                 .uri(new URI(apiUrl))
                 .header("Authorization", "Bearer " + apiKey)
@@ -101,16 +112,13 @@ public class OpenAiService {
     }
 
     private String extractReplyText(ChatCompletionResponse chatResponse) {
-        int tokensUsed = chatResponse.getUsage().getTotal_tokens();
+        int tokensUsed = chatResponse.getUsage().getTotalTokens();
         logger.info("OpenAI tokens used: {}", tokensUsed);
         return chatResponse.getChoices().get(FIRST_CHOICE_INDEX).getMessage().getContent();
     }
 
-    public JsonNode parseAiReply(String content) throws Exception {
-        String cleanContent = content.trim();
-        if (cleanContent.startsWith("```")) {
-            cleanContent = cleanContent.replaceAll("(?s)```(json)?", "").trim();
-        }
-        return jsonMapper.readTree(cleanContent);
+
+    public <T> T parseJsonReply(String content, Class<T> responseType) throws Exception {
+        return jsonMapper.readValue(content, responseType);
     }
 }

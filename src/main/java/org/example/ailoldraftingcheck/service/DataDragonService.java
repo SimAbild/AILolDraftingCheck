@@ -1,6 +1,7 @@
 package org.example.ailoldraftingcheck.service;
 
-import tools.jackson.databind.JsonNode;
+import org.example.ailoldraftingcheck.dtos.DataDragonResponse;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import jakarta.annotation.PostConstruct;
@@ -16,17 +17,17 @@ import java.util.*;
 public class DataDragonService {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDragonService.class);
+    private static final String FALLBACK_PATCH = "16.8.1";
     private static final String DATA_DRAGON_BASE_URL = "https://ddragon.leagueoflegends.com";
     private static final String VERSIONS_URL = DATA_DRAGON_BASE_URL + "/api/versions.json";
     private static final int NEWEST_PATCH_INDEX = 0;
 
-
     private final WebClient webClient = WebClient.builder().build();
-
     private final ObjectMapper jsonMapper = JsonMapper.builder().build();
 
     private final List<Champion> champions = new ArrayList<>();
-    private final Map<String, Champion> championsByLowercaseName = new HashMap<>();
+
+
 
     @PostConstruct
     public void load() {
@@ -34,7 +35,12 @@ public class DataDragonService {
             String latestPatch = fetchLatestPatch();
             loadChampions(latestPatch);
         } catch (Exception e) {
-            logger.warn("Data Dragon failed ({})", e.getMessage());
+            logger.warn("Data Dragon failed ({}), using fallback patch {}", e.getMessage(), FALLBACK_PATCH);
+            try {
+                loadChampions(FALLBACK_PATCH);
+            } catch (Exception fallbackException) {
+                logger.error("Data Dragon fallback also failed", fallbackException);
+            }
         }
     }
 
@@ -44,17 +50,17 @@ public class DataDragonService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
-        return jsonMapper.readTree(versionsJson).get(NEWEST_PATCH_INDEX).asText();
+        List<String> versions = jsonMapper.readValue(versionsJson, new TypeReference<>() {});
+        return versions.get(NEWEST_PATCH_INDEX);
     }
 
     private void loadChampions(String patch) throws Exception {
         String championsJson = fetchChampionData(patch);
-        JsonNode championDataNode = jsonMapper.readTree(championsJson).get("data");
+        DataDragonResponse response = jsonMapper.readValue(championsJson, DataDragonResponse.class);
 
-        for (Map.Entry<String, JsonNode> entry : championDataNode.properties()) {
-            Champion champion = parseChampion(patch, entry);
+        for (Champion champion : response.getData().values()) {
+            champion.setIconUrl(DATA_DRAGON_BASE_URL + "/cdn/" + patch + "/img/champion/" + champion.getId() + ".png");
             champions.add(champion);
-            championsByLowercaseName.put(champion.getName().toLowerCase(Locale.ROOT), champion);
         }
 
         champions.sort(Comparator.comparing(Champion::getName));
@@ -70,19 +76,8 @@ public class DataDragonService {
                 .block();
     }
 
-    private Champion parseChampion(String patch, Map.Entry<String, JsonNode> entry) {
-        String championId = entry.getKey();
-        String championName = entry.getValue().get("name").asText();
-        String iconUrl = DATA_DRAGON_BASE_URL + "/cdn/" + patch + "/img/champion/" + championId + ".png";
-        return new Champion(championId, championName, iconUrl);
-    }
-
     public List<Champion> getAllChampions() {
         return List.copyOf(champions);
     }
 
-    public Optional<Champion> findChampionByName(String name) {
-        if (name == null) return Optional.empty();
-        return Optional.ofNullable(championsByLowercaseName.get(name.toLowerCase(Locale.ROOT)));
-    }
 }

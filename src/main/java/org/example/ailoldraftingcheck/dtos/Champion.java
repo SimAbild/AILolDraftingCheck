@@ -1,5 +1,7 @@
 package org.example.ailoldraftingcheck.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -7,14 +9,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Champion {
-    private String id;
-    private String name;
-    private String iconUrl;
 
-    public Champion (String id, String name, String iconUrl) {
-        this.id = id;
-        this.name = name;
-        this.iconUrl = iconUrl;
-    }
+    @JsonProperty("id")
+    private String id;
+
+    @JsonProperty("name")
+    private String name;
+
+    private String iconUrl;
 }

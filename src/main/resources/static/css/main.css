@@ -1,0 +1,433 @@
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* ── Header / nav ─────────────────────────────────────────────────────────── */
+
+header {
+    background-color: #1a1a2e;
+    padding: 0 2rem;
+    height: 64px;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.logo {
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-decoration: none;
+}
+
+.nav-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}
+
+/* ── Error banner ─────────────────────────────────────────────────────────── */
+
+.error-banner {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 1rem 2rem 0;
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ── Page content ─────────────────────────────────────────────────────────── */
+
+.content {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ── Section header ───────────────────────────────────────────────────────── */
+
+.section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.section-header__step {
+    background: #d48806;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-header__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ── Section card ─────────────────────────────────────────────────────────── */
+
+.section-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+}
+
+.card-text {
+    color: #444;
+    margin-bottom: 1rem;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+.btn-primary {
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0b5ed7;
+}
+
+.btn-primary:disabled {
+    background-color: #6ea8fe;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #444;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #f0f0f0;
+}
+
+/* ── Section actions ──────────────────────────────────────────────────────── */
+
+.section-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────────── */
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #198754;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 1rem auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Rift map role picker ────────────────────────────────────────────────── */
+
+#rift-map {
+    position: relative;
+    width: 520px;
+    height: 520px;
+    max-width: 95%;
+    aspect-ratio: 1 / 1;
+    background-image: url("../img/rift.jpg");
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #2c5a2c;
+    border-radius: 12px;
+    margin: 1rem auto 0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.role-btn {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+    font-weight: 700;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    min-width: 90px;
+    transition: background 0.15s;
+}
+
+.role-btn:hover {
+    background: #ffd34d;
+}
+
+.role-top  { top: 22%; left: 18%; }
+.role-jgl  { top: 45%; left: 32%; }
+.role-mid  { top: 50%; left: 50%; }
+.role-adc  { top: 78%; left: 82%; }
+.role-supp { top: 88%; left: 70%; }
+
+/* ── Draft board ─────────────────────────────────────────────────────────── */
+
+.draft-board {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 1.25rem 0;
+}
+
+.team-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.vs-label {
+    align-self: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #d48806;
+}
+
+/* ── Champion pick cards ─────────────────────────────────────────────────── */
+
+.pick-card {
+    width: 110px;
+    background: #f5f5f7;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+}
+
+.pick-card--empty {
+    border-style: dashed;
+    border-color: #e0a800;
+    color: #a07000;
+    background: #fff9e6;
+}
+
+.pick-card__role {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.pick-card__icon {
+    width: 80px;
+    height: 80px;
+    margin: 4px auto;
+    background: #222;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #aaa;
+    font-size: 1.5rem;
+}
+
+.pick-card__icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pick-card__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+/* ── Champion search autocomplete ───────────────────────────────────────── */
+
+.champion-picker {
+    margin-top: 1.25rem;
+}
+
+.champion-picker label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.text-input {
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.text-input:focus {
+    border-color: #0d6efd;
+}
+
+.suggestions-list {
+    list-style: none;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+}
+
+.suggestion-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 8px;
+}
+
+.suggestion-item:hover {
+    background: #fff2c2;
+}
+
+.suggestions-list:empty {
+    display: none;
+}
+
+.suggestion-item img {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+}
+
+/* ── Coach feedback grid ─────────────────────────────────────────────────── */
+
+.feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.feedback-grid h6 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.feedback-list {
+    list-style: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.feedback-list__item {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.9rem;
+}
+
+.feedback-list__item:last-child {
+    border-bottom: none;
+}
+
+.feedback-list__item--muted {
+    color: #888;
+    font-style: italic;
+}
+
+.alternatives-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 1.25rem 0 0.5rem;
+}
+
+.text-muted {
+    color: #888;
+    font-style: italic;
+}
+
+/* ── Coach alternative champion cards ───────────────────────────────────── */
+
+.alt-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: #f5f5f7;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.alt-card img {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.alt-card__body {
+    flex: 1;
+}
+
+.alt-card__name {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.alt-card__reason {
+    font-size: 0.875rem;
+    color: #444;
+    margin-bottom: 0.4rem;
+}
+
+.alt-card__strengths {
+    margin: 0;
+    padding-left: 1.1rem;
+    list-style: disc;
+}
+
+.alt-card__strengths li {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.5;
+}

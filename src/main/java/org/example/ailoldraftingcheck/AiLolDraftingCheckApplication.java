@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AiLolDraftingCheckApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(AiLolDraftingCheckApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(AiLolDraftingCheckApplication.class, args);
+    }
 
 }

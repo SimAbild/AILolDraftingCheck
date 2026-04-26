@@ -1,10 +1,10 @@
 package org.example.ailoldraftingcheck.api;
 
-import org.example.ailoldraftingcheck.service.DraftService;
 import org.example.ailoldraftingcheck.dtos.DraftResponse;
+import org.example.ailoldraftingcheck.service.DraftService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/draft")
