@@ -22,7 +22,7 @@ const rolePicker = {
         <div class="section-card">
             <p class="card-text">Click the role you play on the map below.</p>
             <div id="rift-map">
-                <button type="button" class="role-btn role-top"  data-role="TOP">.map</button>
+                <button type="button" class="role-btn role-top"  data-role="TOP">TOP</button>
                 <button type="button" class="role-btn role-jgl"  data-role="JGL">JGL</button>
                 <button type="button" class="role-btn role-mid"  data-role="MID">MID</button>
                 <button type="button" class="role-btn role-adc"  data-role="ADC">ADC</button>
