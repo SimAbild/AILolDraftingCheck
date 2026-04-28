@@ -5,7 +5,7 @@ Pick your role, the AI generates a realistic draft around you, you pick a
 champion, and the AI coach explains what's good, what's bad, and suggests
 stronger alternatives.
 
-Pattern taken from the `chatgpt-jokes` example: Spring Boot + WebClient to
+Example: Spring Boot + WebClient to
 call the OpenAI API + static HTML / CSS / JavaScript frontend served from the
 same Spring Boot app.
 
