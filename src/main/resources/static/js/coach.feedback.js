@@ -26,11 +26,15 @@ const coachFeedback = {
     buildAlternativesHtml(alternatives) {
         let alternativesHtml = '';
         for (const alternative of alternatives) {
+            const winrateHtml = alternative.winrate && alternative.winrate > 0
+                ? `<div class="alt-card__winrate">${alternative.winrate}% winrate</div>`
+                : '';
             alternativesHtml += `
             <div class="alt-card">
                 ${draftChampionPlaceholder.findChampionIconHtml(alternative.name)}
                 <div class="alt-card__body">
                     <div class="alt-card__name">${alternative.name}</div>
+                    ${winrateHtml}
                     <div class="alt-card__reason">${alternative.reason}</div>
                     ${coachFeedback.buildStrengthBulletsHtml(alternative.strengths)}
                 </div>

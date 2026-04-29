@@ -3,14 +3,14 @@ package org.example.ailoldraftingcheck.dtos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
-// Forespørgslen fra frontend til coach-analysen.
-// Deserialiseres fra HTTP request body — @NoArgsConstructor og @Getter
-// er påkrævet for at Jackson kan læse JSON-felterne.
-// @JsonProperty gør det eksplicit hvilke JSON-feltnavne der mappes hertil.
+// Deserialiseres fra HTTP request body (solo-mode) eller bygges programmatisk (PvP-mode).
+// @Setter tilføjet så PvpGameService kan oprette requests uden JSON-hacks.
 @Getter
+@Setter
 @NoArgsConstructor
 public class CoachRequest {
 

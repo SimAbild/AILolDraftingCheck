@@ -25,5 +25,6 @@ public class CoachResponse {
         private String name;
         private String reason;
         private List<String> strengths;
+        private double winrate; // Winrate vs enemy laner from OP.GG (e.g. 54.3)
     }
 }
