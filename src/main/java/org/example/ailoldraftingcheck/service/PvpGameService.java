@@ -136,7 +136,7 @@ public class PvpGameService {
         game.setCountdownFinished(true);
 
         // Reveal begge spilleres valg (points=0, feedback=null — endnu ikke beregnet)
-        PvpRevealMessage reveal = new PvpRevealMessage(
+        PvpRoundMessage reveal = new PvpRoundMessage(
                 new PvpPlayerResult(game.getPlayer1().getUsername(), game.getPlayer1().getChampion(), 0, null),
                 new PvpPlayerResult(game.getPlayer2().getUsername(), game.getPlayer2().getChampion(), 0, null)
         );
@@ -150,7 +150,7 @@ public class PvpGameService {
         try {
             PvpPlayerResult result1 = scoringService.calculateResult(game, game.getPlayer1());
             PvpPlayerResult result2 = scoringService.calculateResult(game, game.getPlayer2());
-            PvpResultMessage results = new PvpResultMessage(result1, result2);
+            PvpRoundMessage results = new PvpRoundMessage(result1, result2);
 
             sendToBothPlayers(game, "/queue/pvp/results", results);
             activeGames.remove(game.getRoomId());
