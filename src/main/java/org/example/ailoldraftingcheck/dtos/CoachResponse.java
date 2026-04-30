@@ -9,12 +9,15 @@ import lombok.Setter;
 import java.util.List;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CoachResponse {
     private List<String> positives;
     private List<String> negatives;
     private List<Alternative> alternatives;
+    private Double matchupWinrate; // Brugerens champion winrate vs enemy laner fra OP.GG
+    private Integer score;         // 0-100 score baseret på counterpick, synergi og counters
 
     @Getter
     @Setter
@@ -25,6 +28,6 @@ public class CoachResponse {
         private String name;
         private String reason;
         private List<String> strengths;
-        private double winrate; // Winrate vs enemy laner from OP.GG (e.g. 54.3)
+        private Double winrate; // Winrate vs enemy laner fra OP.GG (f.eks. 54.3) — null indtil OP.GG-data er hentet
     }
 }

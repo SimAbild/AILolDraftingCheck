@@ -607,6 +607,26 @@ nav {
 .points--yellow { color: #ffc107; }
 .points--green  { color: #198754; }
 
+/* ── Coach score ─────────────────────────────────────────────────────── */
+
+.coach-score {
+    text-align: center;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+}
+.coach-score__number {
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+.coach-score__label {
+    font-size: 1rem;
+    opacity: 0.6;
+}
+.coach-score--low  { color: #dc3545; background: rgba(220, 53, 69, 0.08); }
+.coach-score--mid  { color: #b8860b; background: rgba(255, 193, 7, 0.08); }
+.coach-score--high { color: #198754; background: rgba(25, 135, 84, 0.08); }
+
 /* ── Alternative winrate ─────────────────────────────────────────────── */
 
 .alt-card__winrate {
@@ -615,3 +635,18 @@ nav {
     color: #198754;
     margin-bottom: 0.25rem;
 }
+
+/* ── Matchup winrate badge ───────────────────────────────────────────── */
+
+.matchup-winrate-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+.winrate--low  { color: #dc3545; background: rgba(220, 53, 69, 0.15); }
+.winrate--mid  { color: #b8860b; background: rgba(255, 193, 7, 0.15); }
+.winrate--high { color: #198754; background: rgba(25, 135, 84, 0.15); }

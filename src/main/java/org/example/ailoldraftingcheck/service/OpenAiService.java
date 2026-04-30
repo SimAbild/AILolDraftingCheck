@@ -121,4 +121,13 @@ public class OpenAiService {
     public <T> T parseJsonReply(String content, Class<T> responseType) throws Exception {
         return jsonMapper.readValue(content, responseType);
     }
+
+    // Parser et simpelt JSON-svar fra OpenAI og returnerer en enkelt numerisk værdi.
+    // Bruges til svar som {"score": 72} eller {"winrate": 54.3}.
+    @SuppressWarnings("unchecked")
+    public double parseJsonDouble(String content, String fieldName) throws Exception {
+        java.util.Map<String, Object> map = jsonMapper.readValue(content, java.util.Map.class);
+        Number value = (Number) map.get(fieldName);
+        return value != null ? value.doubleValue() : -1;
+    }
 }

@@ -1,7 +1,7 @@
 async function handleHttpErrors(response) {
     if (!response.ok) {
         const errorBody = await response.json();
-        const errorMessage = errorBody.message ? errorBody.message : 'No error details provided';
+        const errorMessage = errorBody.message || errorBody.detail || 'No error details provided';
         throw new Error(errorMessage);
     }
     return response.json();
